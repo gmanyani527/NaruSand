@@ -3714,45 +3714,50 @@ void idPlayer::DrawHUD( idUserInterface *_hud ) {
 	_hud->SetStateInt( "s_debug", cvarSystem->GetCVarInteger( "s_showLevelMeter" ) );
 
 	// don't draw main hud in spectator (only mphud)
-	if ( !spectating && !gameDebug.IsHudActive( DBGHUD_ANY ) ) {
+	if (!spectating && !gameDebug.IsHudActive(DBGHUD_ANY)) {
 		// weapon targeting crosshair
-		if ( !GuiActive() ) {
-			if ( weapon && weapon->GetZoomGui( ) && zoomed ) {
-				weapon->GetZoomGui( )->Redraw( gameLocal.time );
+		if (!GuiActive()) {
+			if (weapon && weapon->GetZoomGui() && zoomed) {
+				weapon->GetZoomGui()->Redraw(gameLocal.time);
 			}
-// RAVEN BEGIN
-// mekberg: removed check for weapon->ShowCrosshair.
-//			we want to show the crosshair regardless for NPC tags
-			if ( cursor && health > 0 ) {		
+			// RAVEN BEGIN
+			// mekberg: removed check for weapon->ShowCrosshair.
+			//			we want to show the crosshair regardless for NPC tags
+			if (cursor && health > 0) {
 				// Pass the current weapon to the cursor gui for custom crosshairs
 // mekberg: adjustable crosshair size.
-				int crossSize = cvarSystem->GetCVarInteger( "g_crosshairSize" );
+				int crossSize = cvarSystem->GetCVarInteger("g_crosshairSize");
 				crossSize = crossSize - crossSize % 8;
-				cvarSystem->SetCVarInteger( "g_crosshairSize", crossSize );
-				cursor->SetStateInt( "g_crosshairSize", crossSize );
-// RAVEN END
-				cursor->Redraw( gameLocal.time );
+				cvarSystem->SetCVarInteger("g_crosshairSize", crossSize);
+				cursor->SetStateInt("g_crosshairSize", crossSize);
+				// RAVEN END
+				cursor->Redraw(gameLocal.time);
 			}
-		}	
+		}
 
-		UpdateHudStats( _hud );
+		UpdateHudStats(_hud);
 
-		if ( focusBrackets ) {
+		if (focusBrackets) {
 			// If 2d_calc is still true then the gui didnt render so we can abandon it
-			if ( focusBrackets->State().GetBool( "2d_calc" ) ) {
-				focusBrackets->SetStateBool( "2d_calc", false );
+			if (focusBrackets->State().GetBool("2d_calc")) {
+				focusBrackets->SetStateBool("2d_calc", false);
 				focusBrackets = NULL;
 				focusBracketsTime = 0;
-				_hud->HandleNamedEvent( "hideBrackets" );
-			} else {
-				_hud->SetStateString( "bracket_left", focusBrackets->State().GetString( "2d_min_x" ) );
-				_hud->SetStateString( "bracket_top", focusBrackets->State().GetString( "2d_min_y" ) );
-				_hud->SetStateFloat( "bracket_width", focusBrackets->State().GetFloat( "2d_max_x" ) - focusBrackets->State().GetFloat( "2d_min_x" ) );
-				_hud->SetStateFloat( "bracket_height", focusBrackets->State().GetFloat( "2d_max_y" ) - focusBrackets->State().GetFloat( "2d_min_y" ) );
+				_hud->HandleNamedEvent("hideBrackets");
+			}
+			else {
+				_hud->SetStateString("bracket_left", focusBrackets->State().GetString("2d_min_x"));
+				_hud->SetStateString("bracket_top", focusBrackets->State().GetString("2d_min_y"));
+				_hud->SetStateFloat("bracket_width", focusBrackets->State().GetFloat("2d_max_x") - focusBrackets->State().GetFloat("2d_min_x"));
+				_hud->SetStateFloat("bracket_height", focusBrackets->State().GetFloat("2d_max_y") - focusBrackets->State().GetFloat("2d_min_y"));
 				// TODO: Find a way to get bracket text from gui to hud
 			}
-		}		
-	 	_hud->Redraw( gameLocal.realClientTime );
+		}
+		_hud->Redraw(gameLocal.realClientTime);
+		// Draw our help-screen overlay
+		if (overlayHud && overlayHudTime > gameLocal.time && overlayHudTime != 0) {
+			overlayHud->Redraw(gameLocal.time);
+		}
 	}
 
 	if ( gameLocal.isMultiplayer ) {

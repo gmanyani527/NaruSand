@@ -26,7 +26,7 @@
 // RAVEN END
 
 #ifdef _WIN32
-#include "TypeInfo.h"
+#include "TypeInfo"
 #else
 #include "NoGameTypeInfo.h"
 #endif
@@ -171,7 +171,7 @@ void Cmd_ListSpawnArgs_f( const idCmdArgs &args ) {
 
 	for ( i = 0; i < ent->spawnArgs.GetNumKeyVals(); i++ ) {
 		const idKeyValue *kv = ent->spawnArgs.GetKeyVal( i );
-		gameLocal.Printf( "\"%s\"  "S_COLOR_WHITE"\"%s\"\n", kv->GetKey().c_str(), kv->GetValue().c_str() );
+		gameLocal.Printf( "\"%s\"  " S_COLOR_WHITE "\"%s\"\n", kv->GetKey().c_str(), kv->GetValue().c_str() );
 	}
 }
 
@@ -3037,7 +3037,32 @@ void Cmd_ClientOverflowReliable_f( const idCmdArgs& args ) {
 	}
 }
 #endif
+void Cmd_HelpScreen_f(const idCmdArgs& args) {
+	gameLocal.Printf("=== HELP SCREEN FUNCTION CALLED ===\n");
+	idPlayer* player = gameLocal.GetLocalPlayer();
 
+	if (!player) {
+		gameLocal.Printf("No local player found.\n");
+		return;
+	}
+
+	idUserInterface* helpGui = uiManager->FindGui(
+		"guis/help.gui",
+		true,
+		false,
+		true
+	);
+
+	if (!helpGui) {
+		gameLocal.Printf("ERROR: help.gui NOT FOUND\n");
+		return;
+	}
+
+	gameLocal.Printf("help.gui FOUND!\n");
+
+	helpGui->Activate(true, gameLocal.time);
+	player->SetHudOverlay(helpGui, 10000);
+}
 /*
 =================
 idGameLocal::InitConsoleCommands
@@ -3053,6 +3078,13 @@ void idGameLocal::InitConsoleCommands( void ) {
 //	cmdSystem->AddCommand( "writeGameState",		WriteGameState_f,			CMD_FL_GAME,				"write game state" );
 //	cmdSystem->AddCommand( "testSaveGame",			TestSaveGame_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"test a save game for a level" );
 // RAVEN END
+	gameLocal.Printf("=== NARUSAND CUSTOM COMMANDS LOADED ===\n");
+	cmdSystem->AddCommand(
+		"helpScreen",
+		Cmd_HelpScreen_f,
+		CMD_FL_GAME,
+		"opens the mod help screen"
+	);
 	cmdSystem->AddCommand( "game_memory",			idClass::DisplayInfo_f,		CMD_FL_GAME,				"displays game class info" );
 	cmdSystem->AddCommand( "listClasses",			idClass::ListClasses_f,		CMD_FL_GAME,				"lists game classes" );
 	cmdSystem->AddCommand( "listThreads",			idThread::ListThreads_f,	CMD_FL_GAME|CMD_FL_CHEAT,	"lists script threads" );
