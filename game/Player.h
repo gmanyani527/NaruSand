@@ -428,6 +428,8 @@ public:
 public:
 	CLASS_PROTOTYPE( idPlayer );
 
+	bool					SpendCursedEnergy(float amount);
+
 							idPlayer();
 	virtual					~idPlayer();
 
@@ -1153,6 +1155,10 @@ private:
 	stateResult_t			State_Legs_Fall					( const stateParms_t& parms );
 	stateResult_t			State_Legs_Land					( const stateParms_t& parms );
 	stateResult_t			State_Legs_Dead					( const stateParms_t& parms );
+
+	//NaruSand - Cursed Energy System 
+	float cursedEnergy;
+	float maxCursedEnergy;
 	
  	CLASS_STATES_PROTOTYPE( idPlayer );
 };

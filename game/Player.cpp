@@ -1798,6 +1798,18 @@ idUserInterface* idPlayer::GetCursorGUI( void ) {
 	return cursor;
 }
 
+bool idPlayer::SpendCursedEnergy(float amount) {
+
+	if (cursedEnergy < amount) {
+		return false;
+	}
+
+	cursedEnergy -= amount;
+
+	return true;
+}
+
+
 /*
 ==============
 idPlayer::Spawn
@@ -1808,6 +1820,8 @@ Prepare any resources used by the player.
 void idPlayer::Spawn( void ) {
 	idStr		temp;
 	idBounds	bounds;
+	maxCursedEnergy = 100.0f;
+	cursedEnergy = maxCursedEnergy;
 
 	if ( entityNumber >= MAX_CLIENTS ) {
 		gameLocal.Error( "entityNum > MAX_CLIENTS for player.  Player may only be spawned with a client." );
@@ -3407,6 +3421,18 @@ void idPlayer::UpdateHudStats( idUserInterface *_hud ) {
 		_hud->SetStateFloat	( "player_armorpct", idMath::ClampFloat ( 0.0f, 1.0f, (float)inventory.armor / (float)inventory.maxarmor ) );
 		_hud->HandleNamedEvent ( "updateArmor" );
 	}
+
+	//Cursed Energy Bar
+	_hud->SetStateFloat("player_cursedEnergy", cursedEnergy);
+	_hud->SetStateFloat(
+		"player_cursedEnergypct",
+		idMath::ClampFloat(
+		0.0f,
+		1.0f,
+		cursedEnergy / maxCursedEnergy
+		)
+	);
+
 	
 	// Boss bar
 	if ( _hud->State().GetInt ( "boss_health", "-1" ) != (bossEnemy ? bossEnemy->health : -1) ) {

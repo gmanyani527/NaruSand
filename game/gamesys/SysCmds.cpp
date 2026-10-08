@@ -3063,6 +3063,24 @@ void Cmd_HelpScreen_f(const idCmdArgs& args) {
 	helpGui->Activate(true, gameLocal.time);
 	player->SetHudOverlay(helpGui, 10000);
 }
+
+void Cmd_SpendEnergy_f(const idCmdArgs& args) {
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	if ( !player ) {
+		gameLocal.Printf("No local player found.\n");
+		return;
+	}
+
+	if ( player->SpendCursedEnergy(25.0f) ) {
+		gameLocal.Printf("Spent 25 Cursed Energy.\n");
+	}
+	else {
+		gameLocal.Printf("Not enough Cursed Energy.\n");
+	}
+
+}
+
 /*
 =================
 idGameLocal::InitConsoleCommands
@@ -3085,6 +3103,14 @@ void idGameLocal::InitConsoleCommands( void ) {
 		CMD_FL_GAME,
 		"opens the mod help screen"
 	);
+
+	cmdSystem->AddCommand(
+		"spendEnergy",
+		Cmd_SpendEnergy_f,
+		CMD_FL_GAME,
+		"spends 25 cursed energy"
+	);
+
 	cmdSystem->AddCommand( "game_memory",			idClass::DisplayInfo_f,		CMD_FL_GAME,				"displays game class info" );
 	cmdSystem->AddCommand( "listClasses",			idClass::ListClasses_f,		CMD_FL_GAME,				"lists game classes" );
 	cmdSystem->AddCommand( "listThreads",			idThread::ListThreads_f,	CMD_FL_GAME|CMD_FL_CHEAT,	"lists script threads" );
