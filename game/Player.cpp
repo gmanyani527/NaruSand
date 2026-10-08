@@ -9591,6 +9591,16 @@ void idPlayer::Think( void ) {
 	}
 
 	UpdateAir();
+
+	if (health > 0 && cursedEnergy < maxCursedEnergy) {
+		float deltaTime = MS2SEC(gameLocal.msec);
+		cursedEnergy += 5.0f * deltaTime;
+		cursedEnergy = idMath::ClampFloat(
+			0.0f,
+			maxCursedEnergy,
+			cursedEnergy
+		);
+	}
 	
 	UpdateHud();
 
