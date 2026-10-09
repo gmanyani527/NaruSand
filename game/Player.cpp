@@ -8640,6 +8640,12 @@ void idPlayer::PerformImpulse( int impulse ) {
  			LastWeapon();
  			break;
  		}
+		
+		case 60: {
+			gameLocal.Printf("Dash Button Pressed!\n");
+			CursedDash();
+			break;
+		}
 	} 
 
 //RAVEN BEGIN
@@ -9124,7 +9130,52 @@ void idPlayer::Move( void ) {
 	}
 // RAVEN END
 }
+void idPlayer::CursedDash(void) {
+	if (health <= 0) {
+		return;
+	}
 
+	if (!SpendCursedEnergy(20.0f)) {
+		return;
+	}
+
+	idVec3 forward = viewAngles.ToForward();
+	idVec3 right = -viewAngles.ToMat3()[1];
+
+	forward.z = 0.0f;
+	right.z = 0.0f;
+
+	forward.Normalize();
+	right.Normalize();
+
+	float dashSpeed = 600.0f;
+
+	idVec3 dashDirection = forward;
+	
+
+	if (usercmd.forwardmove < 0) {
+		dashDirection = -forward;
+	}
+	else if (usercmd.rightmove < 0) {
+		dashDirection = -right;
+	}
+	else if (usercmd.rightmove > 0) {
+		dashDirection = right;
+	}
+
+	idVec3 velocity = physicsObj.GetLinearVelocity();
+
+	if (usercmd.rightmove != 0) {
+		dashSpeed = 3000.0f;
+	}
+
+	velocity.x = dashDirection.x * 600.0f;
+	velocity.y = dashDirection.y * 600.0f;
+
+	physicsObj.SetLinearVelocity(velocity);
+	physicsObj.SetKnockBack(300);
+	gameLocal.Printf("Dash velocity: %f\n", velocity.Length());
+}
 /*
 ==================
 idPlayer::BiasIntentDir
