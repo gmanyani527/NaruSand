@@ -429,6 +429,8 @@ public:
 	CLASS_PROTOTYPE( idPlayer );
 
 	bool					SpendCursedEnergy(float amount);
+	void					CursedDash(void);
+	void					CursedPunch(void);
 
 							idPlayer();
 	virtual					~idPlayer();

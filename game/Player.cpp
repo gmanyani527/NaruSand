@@ -8646,6 +8646,11 @@ void idPlayer::PerformImpulse( int impulse ) {
 			CursedDash();
 			break;
 		}
+		case 61: {
+			gameLocal.Printf( "Punch button pressed!\n" );
+			CursedPunch();
+			break;
+		}
 	} 
 
 //RAVEN BEGIN
@@ -9175,6 +9180,48 @@ void idPlayer::CursedDash(void) {
 	physicsObj.SetLinearVelocity(velocity);
 	physicsObj.SetKnockBack(300);
 	gameLocal.Printf("Dash velocity: %f\n", velocity.Length());
+}
+
+void idPlayer::CursedPunch(void) {
+	if (health <= 0) {
+		return;
+	}
+	trace_t trace;
+	idVec3 start = GetEyePosition();
+	idVec3 end = start + viewAngles.ToForward() * 80.0f;
+
+	gameLocal.TracePoint(
+		this,
+		trace,
+		start,
+		end,
+		MASK_SHOT_BOUNDINGBOX,
+		this
+	);
+
+	if (trace.fraction < 1.0f) {
+		idEntity* hitEntity = gameLocal.entities[trace.c.entityNum];
+		if (hitEntity != NULL && hitEntity->IsType( idAI::GetClassType() )) {
+			gameLocal.Printf("Punch hit something!\n");
+
+			idVec3 direction = viewAngles.ToForward();
+
+			hitEntity->Damage(
+				this,
+				this,
+				direction,
+				"damage_cursed_punch",
+				1.0f,
+				trace.c.id
+			);
+		}
+		else {
+			gameLocal.Printf("Cursed Punch hit something else!\n");
+		}
+	}
+	else {
+		gameLocal.Printf("Punch missed!\n");
+	}
 }
 /*
 ==================
