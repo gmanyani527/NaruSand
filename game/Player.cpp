@@ -8651,6 +8651,11 @@ void idPlayer::PerformImpulse( int impulse ) {
 			CursedPunch();
 			break;
 		}
+		case 62: {
+			gameLocal.Printf("Black Flash Activated!\n");
+			BlackFlash();
+			break;
+		}
 	} 
 
 //RAVEN BEGIN
@@ -9223,6 +9228,71 @@ void idPlayer::CursedPunch(void) {
 		gameLocal.Printf("Punch missed!\n");
 	}
 }
+
+void idPlayer::BlackFlash(void) {
+	trace_t trace;
+
+	idVec3 start = GetEyePosition();
+	idVec3 direction = viewAngles.ToForward();
+	idVec3 end = start + direction * 150.0f;
+
+	gameLocal.TracePoint(
+		this,
+		trace,
+		start,
+		end,
+		MASK_SHOT_BOUNDINGBOX,
+		this
+	);
+
+	if (trace.fraction < 1.0f) {
+
+		idEntity* hitEntity = gameLocal.entities[trace.c.entityNum];
+
+		if (hitEntity != NULL &&
+			hitEntity->IsType(idAI::GetClassType())) {
+
+			if (!SpendCursedEnergy(30.0f)) {
+				gameLocal.Printf("Not enough Cursed Energy!\n");
+				return;
+			}
+
+			hitEntity->Damage(
+				this,
+				this,
+				direction,
+				"damage_black_flash",
+				1.0f,
+				trace.c.id
+			);
+
+			// NaruSand - Black Flash Knockback
+			idVec3 knockbackDirection = direction;
+
+			knockbackDirection.z = 0.2f;
+			knockbackDirection.Normalize();
+
+			idVec3 knockbackVelocity = knockbackDirection * 1000.0f;
+
+			hitEntity->GetPhysics()->SetLinearVelocity(knockbackVelocity);
+			gameLocal.PlayEffect(
+				(const idDecl*)declManager->FindEffect("effects/jjk/black_flash"),
+				trace.endpos,
+				mat3_identity
+			);
+
+
+			gameLocal.Printf("BLACK FLASH HIT!\n");
+		}
+		else {
+			gameLocal.Printf("Black Flash hit something else!\n");
+		}
+	}
+	else {
+		gameLocal.Printf("Black Flash missed!\n");
+	}
+}
+
 /*
 ==================
 idPlayer::BiasIntentDir

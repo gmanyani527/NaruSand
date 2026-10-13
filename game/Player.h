@@ -431,6 +431,7 @@ public:
 	bool					SpendCursedEnergy(float amount);
 	void					CursedDash(void);
 	void					CursedPunch(void);
+	void					BlackFlash(void);
 
 							idPlayer();
 	virtual					~idPlayer();
