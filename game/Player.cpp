@@ -8656,6 +8656,10 @@ void idPlayer::PerformImpulse( int impulse ) {
 			BlackFlash();
 			break;
 		}
+		case 63: {
+			Teleport();
+			break;
+		}
 	} 
 
 //RAVEN BEGIN
@@ -9291,6 +9295,42 @@ void idPlayer::BlackFlash(void) {
 	else {
 		gameLocal.Printf("Black Flash missed!\n");
 	}
+}
+
+void idPlayer::Teleport(void) {
+	if (health <= 0) {
+		return;
+	}
+
+	const float teleportDistance = 800.0f;
+
+	idVec3 start = GetPhysics()->GetOrigin();
+	idVec3 direction = viewAngles.ToForward();
+	idVec3 end = start + direction * teleportDistance;
+
+	trace_t trace;
+
+	gameLocal.TraceBounds(
+		this,
+		trace,
+		start,
+		end,
+		GetPhysics()->GetBounds(),
+		MASK_PLAYERSOLID,
+		this
+	);
+	idVec3 destination = trace.endpos;
+	if (!SpendCursedEnergy(10.0f)) {
+		gameLocal.Printf("Not enough Cursed Energy!\n");
+		return;
+	}
+
+	if (trace.fraction == 0.0f) {
+		gameLocal.Printf("teleport blocked!\n");
+	}
+	GetPhysics()->SetOrigin(destination);
+
+	gameLocal.Printf("Teleport activated!\n");
 }
 
 /*

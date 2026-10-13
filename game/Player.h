@@ -432,6 +432,8 @@ public:
 	void					CursedDash(void);
 	void					CursedPunch(void);
 	void					BlackFlash(void);
+	void					Teleport(void); 
+
 
 							idPlayer();
 	virtual					~idPlayer();
