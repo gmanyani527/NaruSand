@@ -8660,6 +8660,11 @@ void idPlayer::PerformImpulse( int impulse ) {
 			Teleport();
 			break;
 		}
+		case 64: {
+			gameLocal.Printf("Gojo Red Activated!\n");
+			FireGojoRed();
+			break;
+		}
 	} 
 
 //RAVEN BEGIN
@@ -9280,6 +9285,7 @@ void idPlayer::BlackFlash(void) {
 
 			hitEntity->GetPhysics()->SetLinearVelocity(knockbackVelocity);
 			gameLocal.PlayEffect(
+				//(const idDecl*)declManager->FindEffect("effects/jjk/black_flash")
 				(const idDecl*)declManager->FindEffect("effects/jjk/black_flash"),
 				trace.endpos,
 				mat3_identity
@@ -9296,6 +9302,50 @@ void idPlayer::BlackFlash(void) {
 		gameLocal.Printf("Black Flash missed!\n");
 	}
 }
+
+
+void idPlayer::FireGojoRed() {
+	// Only the server should spawn projectiles.
+	if (gameLocal.isClient) {
+		return;
+	}
+
+	// Get the player's viewing direction.
+	idVec3 forward = viewAngles.ToMat3()[0];
+	forward.Normalize();
+
+	// Start the projectile in front of the player.
+	idVec3 start = GetEyePosition() + forward * 48.0f;
+
+	// Find our custom projectile definition.
+	const idDict* projectileDef =
+		gameLocal.FindEntityDefDict("projectile_gojo_red", false);
+
+	if (!projectileDef) {
+		gameLocal.Warning("Gojo Red projectile definition not found!");
+		return;
+	}
+
+	// Spawn the projectile entity.
+	idEntity* ent = NULL;
+	gameLocal.SpawnEntityDef(*projectileDef, &ent, false);
+
+	if (!ent || !ent->IsType(idProjectile::GetClassType())) {
+		gameLocal.Warning("Failed to spawn Gojo Red projectile!");
+		return;
+	}
+
+	idProjectile* projectile = static_cast<idProjectile*>(ent);
+
+	// Initialize the projectile and its owner.
+	projectile->Create(this, start, forward, NULL, NULL);
+
+	// Launch the projectile.
+	projectile->Launch(start, forward, vec3_origin, 0.0f, 1.0f);
+
+	gameLocal.Printf("Gojo Red fired!\n");
+}
+
 
 void idPlayer::Teleport(void) {
 	if (health <= 0) {

@@ -85,7 +85,9 @@ idProjectile::Spawn
 ================
 */
 void idProjectile::Spawn( void ) {
+	gameLocal.Printf("***** MY NEW GAMEX86 DLL IS LOADED *****\n");
  	physicsObj.SetSelf( this );
+
 // RAVEN BEGIN
 // mwhitlock: Dynamic memory consolidation
 	RV_PUSH_HEAP_MEM(this);
@@ -780,8 +782,33 @@ bool idProjectile::Collide( const trace_t &collision, const idVec3 &velocity, bo
 		}
 		// Pass through water
 		return false;
-	} else if ( canDamage && ent->IsType( idActor::GetClassType() ) ) {
-		if ( !projectileFlags.detonate_on_actor ) {
+	}
+	else if (canDamage && ent->IsType(idActor::GetClassType())) {
+
+		if (spawnArgs.GetBool("gojo_red")) {
+
+			// Only the server applies knockback.
+			if (!gameLocal.isClient && ent->GetPhysics()) {
+
+
+				idVec3 pushDirection = velocity;
+				pushDirection.Normalize();
+
+				// Strong forward repulsion
+				idVec3 pushVelocity = pushDirection * 2500.0f;
+
+				// Add upward movement
+				pushVelocity.z += 500.0f;
+
+				ent->GetPhysics()->SetLinearVelocity(pushVelocity);
+
+				gameLocal.Printf("Gojo Red pushed an enemy!\n");
+			}
+
+			// Do not run the normal explosion code.
+			return false;
+		}
+		if (!projectileFlags.detonate_on_actor) {
 			return false;
 		}
 	} else {
@@ -2044,6 +2071,7 @@ idEventDef		EV_LaunchWarheads( "launchWarheads" );
 CLASS_DECLARATION( idProjectile, rvMIRVProjectile )
 	EVENT( EV_LaunchWarheads,		rvMIRVProjectile::Event_LaunchWarheads )
 END_CLASS
+
 
 /*
 ================

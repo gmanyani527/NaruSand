@@ -433,7 +433,7 @@ public:
 	void					CursedPunch(void);
 	void					BlackFlash(void);
 	void					Teleport(void); 
-
+	void					FireGojoRed();
 
 							idPlayer();
 	virtual					~idPlayer();

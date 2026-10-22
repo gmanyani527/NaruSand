@@ -3064,6 +3064,21 @@ void Cmd_HelpScreen_f(const idCmdArgs& args) {
 	player->SetHudOverlay(helpGui, 10000);
 }
 
+
+void Cmd_GojoRed_f(const idCmdArgs& args) {
+	gameLocal.Printf("=== GOJO RED COMMAND CALLED ===\n");
+
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	if (!player) {
+		gameLocal.Printf("ERROR: No local player found.\n");
+		return;
+	}
+
+	player->FireGojoRed();
+}
+
+
 void Cmd_SpendEnergy_f(const idCmdArgs& args) {
 	idPlayer* player = gameLocal.GetLocalPlayer();
 
@@ -3103,6 +3118,15 @@ void idGameLocal::InitConsoleCommands( void ) {
 		CMD_FL_GAME,
 		"opens the mod help screen"
 	);
+
+
+	cmdSystem->AddCommand(
+		"gojoRed",
+		Cmd_GojoRed_f,
+		CMD_FL_GAME,
+		"fires Gojo's Red projectile"
+	);
+
 
 	cmdSystem->AddCommand(
 		"spendEnergy",
