@@ -1818,6 +1818,11 @@ Prepare any resources used by the player.
 ==============
 */
 void idPlayer::Spawn( void ) {
+	jjkAirStepUsed = false;
+	jjkFallDamageProtected = false;
+	jjkJumpWasHeld = false;
+	jjkWasAirborne = false;
+
 	idStr		temp;
 	idBounds	bounds;
 	maxCursedEnergy = 100.0f;
@@ -7479,8 +7484,24 @@ void idPlayer::CrashLand( const idVec3 &oldOrigin, const idVec3 &oldVelocity ) {
 	pfl.softLanding = false;
 	pfl.hardLanding = false;
 
-	// if the player is not on the ground
-	if ( !physicsObj.HasGroundContacts() ) {
+	// If still airborne, do nothing.
+	if (!physicsObj.HasGroundContacts()) {
+		return;
+	}
+
+	// JJK Air Step: prevent fall damage
+	// on the protected landing only.
+	if (jjkFallDamageProtected) {
+		jjkFallDamageProtected = false;
+		return;
+	}
+
+	gravityNormal = physicsObj.GetGravityNormal();
+
+	// Air Step protects the player from fall damage
+	// until the next landing.
+	if (jjkFallDamageProtected) {
+		jjkFallDamageProtected = false;
 		return;
 	}
 
@@ -9953,12 +9974,88 @@ void idPlayer::Think( void ) {
 
 // RAVEN BEGIN
 // abahr
-	if( !noclip && !spectating ) {
+	if (!noclip && !spectating) {
 		UpdateGravity();
 	}
-// RAVEN END
+	// RAVEN END
 
+	// =====================================
+	// JJK AIR STEP - DOUBLE JUMP
+	// =====================================
+
+	const bool jumpHeld = (usercmd.upmove >= 10);
+	const bool jumpPressed = jumpHeld && !jjkJumpWasHeld;
+
+	// Remember the jump button state.
+	jjkJumpWasHeld = jumpHeld;
+
+	// Check whether the player was grounded
+	// before the current physics update.
+	const bool wasGrounded = physicsObj.HasGroundContacts();
+
+	// Only allow Air Step after a normal jump.
+	// HasJumped() is set by the physics system
+	// when the player performs a normal jump.
+	if (physicsObj.HasJumped()) {
+		jjkWasAirborne = true;
+	}
+
+	// Attempt Air Step only when airborne.
+	if (health > 0 &&
+		!noclip &&
+		!spectating &&
+		!gameLocal.inCinematic &&
+		!IsInVehicle() &&
+		jumpPressed &&
+		!wasGrounded &&
+		jjkWasAirborne &&
+		!jjkAirStepUsed &&
+		cursedEnergy >= 15.0f) {
+
+		// Get the current velocity.
+		idVec3 velocity = physicsObj.GetLinearVelocity();
+
+		// Use the player's gravity direction.
+		idVec3 upward = -physicsObj.GetGravityNormal();
+
+		// Remove existing downward/upward velocity
+		// along the gravity axis, then apply the boost.
+		velocity -= upward * (velocity * upward);
+		velocity += upward * 320.0f;
+
+		physicsObj.SetLinearVelocity(velocity);
+
+		// Consume cursed energy.
+		cursedEnergy -= 15.0f;
+
+		// Air Step can only be used once per jump.
+		jjkAirStepUsed = true;
+
+		// Protect against fall damage on landing.
+		jjkFallDamageProtected = true;
+
+		gameLocal.Printf(
+			"AIR STEP ACTIVATED! Energy: %.1f\n",
+			cursedEnergy
+		);
+	}
+
+	// Run the normal movement physics.
 	Move();
+
+	if (physicsObj.HasJumped()) {
+		jjkWasAirborne = true;
+	}
+
+	// Reset Air Step when the player lands.
+	if (physicsObj.HasGroundContacts()) {
+
+		jjkAirStepUsed = false;
+		jjkWasAirborne = false;
+
+		// Landing protection is cleared by
+		// CrashLand() when the protected landing occurs.
+	}
 
 	if ( !g_stopTime.GetBool() ) {
  		if ( !noclip && !spectating && ( health > 0 ) && !IsHidden() ) {

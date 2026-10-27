@@ -436,6 +436,10 @@ public:
 	void					FireGojoRed();
 	void					FindDomainTarget();
 	void					CollectDomainTargets(idList<idStr>& targets);
+	bool					jjkAirStepUsed;
+	bool					jjkFallDamageProtected;
+	bool					jjkJumpWasHeld;
+	bool					jjkWasAirborne;
 
 							idPlayer();
 	virtual					~idPlayer();
