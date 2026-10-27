@@ -434,6 +434,8 @@ public:
 	void					BlackFlash(void);
 	void					Teleport(void); 
 	void					FireGojoRed();
+	void					FindDomainTarget();
+	void					CollectDomainTargets(idList<idStr>& targets);
 
 							idPlayer();
 	virtual					~idPlayer();

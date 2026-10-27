@@ -3,6 +3,21 @@
 #pragma hdrstop
 
 #include "../Game_local.h"
+
+idCVar jjk_domain_enemies(
+	"jjk_domain_enemies",
+	"",
+	CVAR_GAME,
+	"Enemy definitions selected for Domain Expansion"
+);
+
+idCVar jjk_domain_return_map(
+	"jjk_domain_return_map",
+	"",
+	CVAR_GAME,
+	"Map to return to after Domain Expansion"
+);
+
 // RAVEN BEGIN
 #include "../ai/AI.h"
 #if !defined(__GAME_PROJECTILE_H__)
@@ -3076,7 +3091,335 @@ void Cmd_GojoRed_f(const idCmdArgs& args) {
 	}
 
 	player->FireGojoRed();
+
 }
+
+
+void Cmd_DomainScan_f(const idCmdArgs& args) {
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	if (!player) {
+		gameLocal.Printf("No player found.\n");
+		return;
+	}
+
+	idList<idStr> targets;
+	player->CollectDomainTargets(targets);
+}
+
+
+
+void Cmd_DomainExpansion_f(const idCmdArgs& args) {
+
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	if (!player) {
+		gameLocal.Printf("No player found.\n");
+		return;
+	}
+
+	// Remember the map before entering Domain Expansion.
+	const char* currentMap = gameLocal.GetMapName();
+
+	jjk_domain_return_map.SetString(currentMap);
+
+	gameLocal.Printf(
+		"Domain return map saved: %s\n",
+		jjk_domain_return_map.GetString()
+	);
+
+	idList<idStr> targets;
+	player->CollectDomainTargets(targets);
+
+	// Store selected enemy definitions in a console variable.
+	idStr enemyList;
+
+	for (int i = 0; i < targets.Num(); i++) {
+		if (i > 0) {
+			enemyList += ",";
+		}
+
+		enemyList += targets[i];
+	}
+
+	cvarSystem->SetCVarString(
+		"jjk_domain_enemies",
+		enemyList.c_str()
+	);
+
+	gameLocal.Printf(
+		"BEFORE MAP CHANGE - Enemy count: %d\n",
+		targets.Num()
+	);
+
+	gameLocal.Printf(
+		"BEFORE MAP CHANGE - Saved list: %s\n",
+		cvarSystem->GetCVarString("jjk_domain_enemies")
+	);
+
+	gameLocal.Printf(
+		"Domain Expansion: transporting %d enemies\n",
+		targets.Num()
+	);
+
+	cmdSystem->BufferCommandText(
+		CMD_EXEC_APPEND,
+		"map domain_void\n"
+	); 
+
+	cmdSystem->BufferCommandText(
+		CMD_EXEC_APPEND,
+		"spawnDomainEnemies\n"
+	);
+}
+
+
+
+
+void Cmd_SpawnDomainEnemies_f(const idCmdArgs& args) {
+
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	if (!player) {
+		gameLocal.Printf("Domain spawn: no player found.\n");
+		return;
+	}
+
+	idStr enemyList = jjk_domain_enemies.GetString();
+
+	gameLocal.Printf(
+		"DOMAIN SPAWN DEBUG - Saved enemies: [%s]\n",
+		enemyList.c_str()
+	);
+
+	if (enemyList.IsEmpty()) {
+		gameLocal.Printf("No domain enemies saved.\n");
+		return;
+	}
+
+
+	idList<idStr> enemies;
+
+	int start = 0;
+
+	for (int i = 0; i <= enemyList.Length(); i++) {
+
+		if (i == enemyList.Length() || enemyList[i] == ',') {
+
+			if (i > start) {
+				idStr enemyName = enemyList.Mid(start, i - start);
+
+				enemies.Append(enemyName);
+			}
+
+			start = i + 1;
+		}
+	}
+
+	gameLocal.Printf(
+		"DOMAIN DEBUG - Parsed enemy count: %d\n",
+		enemies.Num()
+	);
+
+	for (int i = 0; i < enemies.Num(); i++) {
+		gameLocal.Printf(
+			"DOMAIN DEBUG - Enemy %d: [%s]\n",
+			i + 1,
+			enemies[i].c_str()
+		);
+	}
+
+
+	idVec3 playerPos = player->GetPhysics()->GetOrigin();
+
+	for (int i = 0; i < enemies.Num(); i++) {
+
+		const idDict* enemyDef =
+			gameLocal.FindEntityDefDict(
+				enemies[i].c_str(),
+				false
+			);
+
+		if (!enemyDef) {
+			gameLocal.Warning(
+				"Domain: enemy definition not found: %s",
+				enemies[i].c_str()
+			);
+			continue;
+		}
+
+		idDict spawnArgs = *enemyDef;
+
+		idVec3 spawnPos =
+			playerPos + idVec3(
+				200.0f + (i % 3) * 100.0f,
+				(i / 3) * 120.0f,
+				0.0f
+			);
+
+		spawnArgs.SetVector("origin", spawnPos);
+
+		idEntity* spawnedEnemy = NULL;
+
+		gameLocal.SpawnEntityDef(
+			spawnArgs,
+			&spawnedEnemy,
+			false
+		);
+
+		if (spawnedEnemy) {
+			gameLocal.Printf(
+				"Domain enemy spawned: %s\n",
+				enemies[i].c_str()
+			);
+		}
+	}
+
+	// Prevent spawning the same enemies again.
+	cvarSystem->SetCVarString("jjk_domain_enemies", "");
+}
+
+
+/*void Cmd_DomainExit_f(const idCmdArgs& args) {
+
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	if (!player) {
+		gameLocal.Printf("No player found.\n");
+		return;
+	}
+
+	idStr returnMap = jjk_domain_return_map.GetString();
+
+	if (returnMap.IsEmpty()) {
+		gameLocal.Printf(
+			"Domain Exit: No return map saved.\n"
+		);
+		return;
+	}
+
+	gameLocal.Printf(
+		"Domain Expansion ending. Returning to %s\n",
+		returnMap.c_str()
+	);
+
+
+	idStr mapName = returnMap;
+
+	// Remove the leading maps/ directory.
+	if (mapName.Find("maps/") == 0) {
+		mapName = mapName.Mid(5, mapName.Length() - 5);
+	}
+
+	// Remove the .map extension.
+	if (mapName.Length() >= 4 &&
+		mapName.Right(4) == ".map") {
+		mapName = mapName.Left(mapName.Length() - 4);
+	}
+
+	gameLocal.Printf(
+		"Domain Exit: Loading map %s\n",
+		mapName.c_str()
+	);
+
+
+	// Remove any directory path, keeping only the map name.
+	int lastSlash = -1;
+
+	for (int i = 0; i < mapName.Length(); i++) {
+		if (mapName[i] == '/' || mapName[i] == '\\') {
+			lastSlash = i;
+		}
+	}
+
+	if (lastSlash >= 0) {
+		mapName = mapName.Mid(
+			lastSlash + 1,
+			mapName.Length() - lastSlash - 1
+		);
+	}
+
+	gameLocal.Printf(
+		"FINAL DOMAIN RETURN MAP: %s\n",
+		mapName.c_str()
+	);
+
+
+	idStr command = "map ";
+	command += mapName;
+	command += "\n";
+
+	cmdSystem->BufferCommandText(
+		CMD_EXEC_APPEND,
+		command.c_str()
+	);
+	
+	} */
+
+
+
+void Cmd_DomainExit_f(const idCmdArgs& args) {
+
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	if (!player) {
+		gameLocal.Printf("No player found.\n");
+		return;
+	}
+
+	// Retrieve the map saved before Domain Expansion.
+	idStr mapName = jjk_domain_return_map.GetString();
+
+	if (mapName.IsEmpty()) {
+		gameLocal.Printf(
+			"Domain Exit: No return map saved.\n"
+		);
+		return;
+	}
+
+	gameLocal.Printf(
+		"DOMAIN EXIT - Original map: %s\n",
+		mapName.c_str()
+	);
+
+	// Remove the leading "maps/" only.
+	// maps/game/airdefense1.map -> game/airdefense1.map
+	if (mapName.Find("maps/") == 0) {
+		mapName = mapName.Mid(
+			5,
+			mapName.Length() - 5
+		);
+	}
+
+	// Remove the ".map" extension.
+	// game/airdefense1.map -> game/airdefense1
+	if (mapName.Length() >= 4 &&
+		mapName.Right(4) == ".map") {
+
+		mapName = mapName.Left(
+			mapName.Length() - 4
+		);
+	}
+
+	// Construct the return command.
+	idStr command = "map ";
+	command += mapName;
+	command += "\n";
+
+	gameLocal.Printf(
+		"DOMAIN EXIT COMMAND: %s\n",
+		command.c_str()
+	);
+
+	// Queue the map transition.
+	cmdSystem->BufferCommandText(
+		CMD_EXEC_APPEND,
+		command.c_str()
+	);
+}
+
+
+
 
 
 void Cmd_SpendEnergy_f(const idCmdArgs& args) {
@@ -3129,10 +3472,39 @@ void idGameLocal::InitConsoleCommands( void ) {
 
 
 	cmdSystem->AddCommand(
+		"domainExpansion",
+		Cmd_DomainExpansion_f,
+		CMD_FL_GAME,
+		"activates Domain Expansion"
+	);
+
+	cmdSystem->AddCommand(
+		"domainScan",
+		Cmd_DomainScan_f,
+		CMD_FL_GAME,
+		"finds nearby enemies for Domain Expansion"
+	);
+
+
+	cmdSystem->AddCommand(
 		"spendEnergy",
 		Cmd_SpendEnergy_f,
 		CMD_FL_GAME,
 		"spends 25 cursed energy"
+	);
+
+	cmdSystem->AddCommand(
+		"spawnDomainEnemies",
+		Cmd_SpawnDomainEnemies_f,
+		CMD_FL_GAME,
+		"spawns captured enemies inside Domain Expansion"
+	);
+
+	cmdSystem->AddCommand(
+		"domainExit",
+		Cmd_DomainExit_f,
+		CMD_FL_GAME,
+		"returns the player from Domain Expansion"
 	);
 
 	cmdSystem->AddCommand( "game_memory",			idClass::DisplayInfo_f,		CMD_FL_GAME,				"displays game class info" );

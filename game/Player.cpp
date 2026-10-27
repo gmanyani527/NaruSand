@@ -9347,6 +9347,171 @@ void idPlayer::FireGojoRed() {
 }
 
 
+void idPlayer::FindDomainTarget() {
+
+	const float maxDistance = 600.0f;
+	const float minDot = 0.5f; // 120-degree cone
+	const int maxEnemies = 5;
+
+	idVec3 playerPos = GetPhysics()->GetOrigin();
+
+	idVec3 forward = viewAngles.ToMat3()[0];
+	forward.z = 0.0f;
+	forward.Normalize();
+
+	int enemyCount = 0;
+
+	gameLocal.Printf("=== DOMAIN TARGET SCAN ===\n");
+
+	for (int i = 0; i < MAX_GENTITIES; i++) {
+
+		idEntity* ent = gameLocal.entities[i];
+
+		if (!ent || !ent->IsType(idAI::GetClassType())) {
+			continue;
+		}
+
+		if (ent->health <= 0) {
+			continue;
+		}
+
+
+		idAI* ai = static_cast<idAI*>(ent);
+
+		// Only capture Strogg enemies.
+		// Friendly Marines will be ignored.
+		if (ai->team != AITEAM_STROGG) {
+			continue;
+		}
+
+
+		idVec3 enemyPos = ent->GetPhysics()->GetOrigin();
+		idVec3 direction = enemyPos - playerPos;
+
+		float distance = direction.Length();
+
+		if (distance > maxDistance || distance < 1.0f) {
+			continue;
+		}
+
+		direction.z = 0.0f;
+		if (direction.Normalize() == 0.0f) {
+			continue;
+		}
+
+		float dot = forward * direction;
+
+		if (dot < minDot) {
+			continue;
+		}
+
+
+		const char* enemyDef = ent->spawnArgs.GetString("classname");
+
+		gameLocal.Printf(
+			"Domain target: %s | Class: %s | Distance: %.1f\n",
+			ent->name.c_str(),
+			enemyDef,
+			distance
+		);
+
+
+		enemyCount++;
+
+		if (enemyCount >= maxEnemies) {
+			break;
+		}
+	}
+
+	gameLocal.Printf(
+		"Total domain targets: %d\n",
+		enemyCount
+	);
+}
+
+
+void idPlayer::CollectDomainTargets(idList<idStr>& targets) {
+
+	targets.Clear();
+
+	const float maxDistance = 600.0f;
+	const float minDot = 0.5f;
+	const int maxEnemies = 5;
+
+	idVec3 playerPos = GetPhysics()->GetOrigin();
+
+	idVec3 forward = viewAngles.ToMat3()[0];
+	forward.z = 0.0f;
+	forward.Normalize();
+
+	for (int i = 0; i < MAX_GENTITIES; i++) {
+
+		idEntity* ent = gameLocal.entities[i];
+
+		if (!ent || !ent->IsType(idAI::GetClassType())) {
+			continue;
+		}
+
+		if (ent->health <= 0) {
+			continue;
+		}
+
+		idAI* ai = static_cast<idAI*>(ent);
+
+		// Only capture Strogg enemies.
+		if (ai->team != AITEAM_STROGG) {
+			continue;
+		}
+
+		idVec3 direction =
+			ent->GetPhysics()->GetOrigin() - playerPos;
+
+		float distance = direction.Length();
+
+		if (distance > maxDistance || distance < 1.0f) {
+			continue;
+		}
+
+		direction.z = 0.0f;
+
+		if (direction.Normalize() == 0.0f) {
+			continue;
+		}
+
+		float dot = forward * direction;
+
+		if (dot < minDot) {
+			continue;
+		}
+
+		const char* enemyDef =
+			ent->spawnArgs.GetString("classname");
+
+		if (!enemyDef || !enemyDef[0]) {
+			continue;
+		}
+
+		targets.Append(idStr(enemyDef));
+
+		gameLocal.Printf(
+			"Captured domain target: %s\n",
+			enemyDef
+		);
+
+		if (targets.Num() >= maxEnemies) {
+			break;
+		}
+	}
+
+	gameLocal.Printf(
+		"Domain targets collected: %d\n",
+		targets.Num()
+	);
+}
+
+
+
+
 void idPlayer::Teleport(void) {
 	if (health <= 0) {
 		return;
