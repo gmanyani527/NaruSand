@@ -1822,6 +1822,10 @@ void idPlayer::Spawn( void ) {
 	jjkFallDamageProtected = false;
 	jjkJumpWasHeld = false;
 	jjkWasAirborne = false;
+	jjkWallRunning = false;
+	jjkWallRunStartTime = 0;
+	jjkWallRunCooldownUntil = 0;
+
 
 	idStr		temp;
 	idBounds	bounds;
@@ -10040,8 +10044,12 @@ void idPlayer::Think( void ) {
 		);
 	}
 
+	if (health > 0 && !noclip && !spectating) {
+		CheckCursedWall();
+	}
 	// Run the normal movement physics.
 	Move();
+	
 
 	if (physicsObj.HasJumped()) {
 		jjkWasAirborne = true;
@@ -10056,6 +10064,7 @@ void idPlayer::Think( void ) {
 		// Landing protection is cleared by
 		// CrashLand() when the protected landing occurs.
 	}
+
 
 	if ( !g_stopTime.GetBool() ) {
  		if ( !noclip && !spectating && ( health > 0 ) && !IsHidden() ) {
@@ -10205,6 +10214,176 @@ void idPlayer::Think( void ) {
 
 	inBuyZonePrev = false;
 }
+
+
+
+
+void idPlayer::CheckCursedWall(void) {
+
+	const int maxDuration = 1500; // 1.5 seconds
+	const int cooldown = 2000;    // 2 seconds
+	const float energyDrain = 10.0f; // Energy per second
+
+	// Check whether the player can continue wall running.
+	const bool grounded = physicsObj.HasGroundContacts();
+	const bool movingForward = usercmd.forwardmove > 0;
+	const bool holdingRun = (usercmd.buttons & BUTTON_RUN) != 0;
+
+	// Stop when grounded, Shift is released,
+	// or forward movement stops.
+	if (grounded || !movingForward || !holdingRun) {
+
+		if (jjkWallRunning) {
+			jjkWallRunning = false;
+			jjkWallRunCooldownUntil = gameLocal.time + cooldown;
+		}
+
+		return;
+	}
+
+	// Prevent restarting during cooldown.
+	if (!jjkWallRunning &&
+		gameLocal.time < jjkWallRunCooldownUntil) {
+		return;
+	}
+
+	// Stop when the maximum duration is reached.
+	if (jjkWallRunning &&
+		gameLocal.time - jjkWallRunStartTime >= maxDuration) {
+
+		jjkWallRunning = false;
+		jjkWallRunCooldownUntil = gameLocal.time + cooldown;
+		return;
+	}
+
+	// Detect nearby walls.
+	trace_t trace;
+
+	idVec3 start = physicsObj.GetOrigin();
+	idVec3 right = viewAngles.ToMat3()[1];
+
+	bool foundWall = false;
+	idVec3 wallNormal;
+
+	// Check the right side.
+	idVec3 end = start + right * 32.0f;
+
+	gameLocal.TracePoint(
+		this,
+		trace,
+		start,
+		end,
+		MASK_SHOT_BOUNDINGBOX,
+		this
+	);
+
+	if (trace.fraction < 1.0f) {
+		wallNormal = trace.c.normal;
+		foundWall = true;
+	}
+
+	// Check the left side if no right wall was found.
+	if (!foundWall) {
+
+		end = start - right * 32.0f;
+
+		gameLocal.TracePoint(
+			this,
+			trace,
+			start,
+			end,
+			MASK_SHOT_BOUNDINGBOX,
+			this
+		);
+
+		if (trace.fraction < 1.0f) {
+			wallNormal = trace.c.normal;
+			foundWall = true;
+		}
+	}
+
+	// Stop if there is no nearby wall.
+	if (!foundWall) {
+
+		if (jjkWallRunning) {
+			jjkWallRunning = false;
+			jjkWallRunCooldownUntil = gameLocal.time + cooldown;
+		}
+
+		return;
+	}
+
+	// Reject floors and ceilings.
+	idVec3 up = -physicsObj.GetGravityNormal();
+
+	if (idMath::Fabs(wallNormal * up) > 0.2f) {
+
+		if (jjkWallRunning) {
+			jjkWallRunning = false;
+			jjkWallRunCooldownUntil = gameLocal.time + cooldown;
+		}
+
+		return;
+	}
+
+	// Calculate movement parallel to the wall.
+	idVec3 forward = viewAngles.ToForward();
+
+	idVec3 alongWall =
+		forward - wallNormal * (forward * wallNormal);
+
+	if (alongWall.Normalize() == 0.0f) {
+
+		if (jjkWallRunning) {
+			jjkWallRunning = false;
+			jjkWallRunCooldownUntil = gameLocal.time + cooldown;
+		}
+
+		return;
+	}
+
+	// Calculate cursed energy cost for this frame.
+	const float energyCost =
+		energyDrain * MS2SEC(gameLocal.msec);
+
+	// Stop if there is insufficient cursed energy.
+	if (cursedEnergy < energyCost) {
+
+		if (jjkWallRunning) {
+			jjkWallRunning = false;
+			jjkWallRunCooldownUntil = gameLocal.time + cooldown;
+		}
+
+		return;
+	}
+
+	// Start a new wall run.
+	if (!jjkWallRunning) {
+		jjkWallRunning = true;
+		jjkWallRunStartTime = gameLocal.time;
+
+		gameLocal.Printf("JJK WALL RUN STARTED!\n");
+	}
+
+	// Consume cursed energy.
+	cursedEnergy -= energyCost;
+	cursedEnergy = idMath::ClampFloat(
+		0.0f, maxCursedEnergy, cursedEnergy
+	);
+
+	// Apply wall-running velocity.
+	idVec3 velocity = alongWall * 300.0f;
+	velocity += up * 40.0f;
+
+	physicsObj.SetLinearVelocity(velocity);
+
+	// Prevent fall damage on the next landing.
+	jjkFallDamageProtected = true;
+}
+
+
+
+
 
 /*
 =================

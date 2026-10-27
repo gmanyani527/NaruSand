@@ -440,6 +440,11 @@ public:
 	bool					jjkFallDamageProtected;
 	bool					jjkJumpWasHeld;
 	bool					jjkWasAirborne;
+	bool					jjkWallRunning;
+	int						jjkWallRunStartTime;
+	int						jjkWallRunCooldownUntil;
+	void					CheckCursedWall();
+
 
 							idPlayer();
 	virtual					~idPlayer();
