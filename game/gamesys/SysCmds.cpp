@@ -3462,6 +3462,17 @@ void Cmd_SpendEnergy_f(const idCmdArgs& args) {
 
 }
 
+static void Cmd_JJKDismantle_f(const idCmdArgs& args) {
+
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	if (player == NULL) {
+		return;
+	}
+
+	player->UseDismantle();
+}
+
 /*
 =================
 idGameLocal::InitConsoleCommands
@@ -3542,6 +3553,13 @@ void idGameLocal::InitConsoleCommands( void ) {
 		Cmd_JJKSuperJumpUp_f,
 		CMD_FL_GAME,
 		"Release JJK Super Jump"
+	);
+
+	cmdSystem->AddCommand(
+		"jjkDismantle",
+		Cmd_JJKDismantle_f,
+		CMD_FL_GAME,
+		"Use JJK Dismantle cursed slash"
 	);
 
 	cmdSystem->AddCommand( "game_memory",			idClass::DisplayInfo_f,		CMD_FL_GAME,				"displays game class info" );

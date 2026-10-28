@@ -1825,6 +1825,7 @@ void idPlayer::Spawn( void ) {
 	jjkWallRunning = false;
 	jjkWallRunStartTime = 0;
 	jjkWallRunCooldownUntil = 0;
+	jjkDismantleCooldownUntil = 0;
 
 
 	idStr		temp;
@@ -9325,6 +9326,80 @@ void idPlayer::BlackFlash(void) {
 	}
 	else {
 		gameLocal.Printf("Black Flash missed!\n");
+	}
+}
+
+
+
+void idPlayer::UseDismantle(void) {
+
+	// Prevent use while dead or spectating
+	if (health <= 0 || spectating || noclip) {
+		return;
+	}
+
+	// Check cooldown
+	if (gameLocal.time < jjkDismantleCooldownUntil) {
+		gameLocal.Printf("DISMANTLE: Still on cooldown!\n");
+		return;
+	}
+
+	// Check cursed energy
+	if (cursedEnergy < 15.0f) {
+		gameLocal.Printf("DISMANTLE: Not enough cursed energy!\n");
+		return;
+	}
+
+	trace_t trace;
+
+	idVec3 start = GetEyePosition();
+	idVec3 direction = viewAngles.ToForward();
+	idVec3 end = start + direction * 600.0f;
+
+	// Trace forward to detect an enemy
+	gameLocal.TracePoint(
+		this,
+		trace,
+		start,
+		end,
+		MASK_SHOT_BOUNDINGBOX,
+		this
+	);
+
+	// Spend energy even if the slash misses
+	if (!SpendCursedEnergy(15.0f)) {
+		return;
+	}
+
+	// Start 2-second cooldown
+	jjkDismantleCooldownUntil = gameLocal.time + 2000;
+
+	if (trace.fraction < 1.0f) {
+
+		idEntity* hitEntity = gameLocal.entities[trace.c.entityNum];
+
+		if (hitEntity != NULL &&
+			hitEntity->IsType(idAI::GetClassType())) {
+
+			// Reuse the existing Black Flash damage definition
+			// temporarily, until we add damage_dismantle.
+			hitEntity->Damage(
+				this,
+				this,
+				direction,
+				"damage_black_flash",
+				1.0f,
+				trace.c.id
+			);
+
+			gameLocal.Printf("DISMANTLE HIT!\n");
+		}
+		else {
+			gameLocal.Printf("DISMANTLE: Hit something else!\n");
+		}
+	}
+	else {
+		gameLocal.Printf("DISMANTLE MISSED!\n");
 	}
 }
 

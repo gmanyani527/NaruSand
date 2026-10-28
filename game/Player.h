@@ -451,6 +451,11 @@ public:
 	void					ReleaseSuperJumpCharge();
 	void					CancelSuperJumpCharge();
 	void					ToggleSuperJump();
+	void					UseDismantle();
+	int						jjkDismantleCooldownUntil;
+	int						jjkBoogieWoogieCooldownUntil;
+	void					UseBoogieWoogie();
+
 
 							idPlayer();
 	virtual					~idPlayer();
