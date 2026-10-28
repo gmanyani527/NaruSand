@@ -9612,6 +9612,91 @@ void idPlayer::CollectDomainTargets(idList<idStr>& targets) {
 
 
 
+void idPlayer::UseBoogieWoogie(void) {
+
+	// Check if player can use the ability
+	if (health <= 0 || spectating || noclip) {
+		return;
+	}
+
+	// Check cooldown (4 seconds)
+	if (gameLocal.time < jjkBoogieWoogieCooldownUntil) {
+		gameLocal.Printf("BOOGIE WOOGIE: On cooldown!\n");
+		return;
+	}
+
+	// Check cursed energy
+	if (cursedEnergy < 20.0f) {
+		gameLocal.Printf("BOOGIE WOOGIE: Not enough energy!\n");
+		return;
+	}
+
+	// Find enemy in front of player
+	trace_t trace;
+
+	idVec3 start = GetEyePosition();
+	idVec3 direction = viewAngles.ToForward();
+	idVec3 end = start + direction * 600.0f;
+
+	gameLocal.TracePoint(
+		this,
+		trace,
+		start,
+		end,
+		MASK_SHOT_BOUNDINGBOX,
+		this
+	);
+
+	// Check if anything was hit
+	if (trace.fraction >= 1.0f) {
+		gameLocal.Printf("BOOGIE WOOGIE: No target!\n");
+		return;
+	}
+
+	// Get targeted entity
+	idEntity* enemy = gameLocal.entities[trace.c.entityNum];
+
+	// Make sure target is an AI enemy
+	if (enemy == NULL || !enemy->IsType(idAI::GetClassType())) {
+		gameLocal.Printf("BOOGIE WOOGIE: Invalid target!\n");
+		return;
+	}
+
+	// Save original positions
+	idVec3 playerPosition = GetPhysics()->GetOrigin();
+	idVec3 enemyPosition = enemy->GetPhysics()->GetOrigin();
+
+	// Spend cursed energy
+	if (!SpendCursedEnergy(20.0f)) {
+		gameLocal.Printf("BOOGIE WOOGIE: Energy payment failed!\n");
+		return;
+	}
+
+	// Swap player and enemy positions
+	GetPhysics()->SetOrigin(enemyPosition);
+	enemy->GetPhysics()->SetOrigin(playerPosition);
+
+	// Debug messages
+	gameLocal.Printf("DEBUG: Position swap executed!\n");
+
+	gameLocal.Printf(
+		"DEBUG: Player position: %s\n",
+		GetPhysics()->GetOrigin().ToString()
+	);
+
+	gameLocal.Printf(
+		"DEBUG: Enemy position: %s\n",
+		enemy->GetPhysics()->GetOrigin().ToString()
+	);
+
+	// Start 4-second cooldown
+	jjkBoogieWoogieCooldownUntil = gameLocal.time + 4000;
+
+	gameLocal.Printf("BOOGIE WOOGIE ACTIVATED!\n");
+}
+
+
+
 void idPlayer::Teleport(void) {
 	if (health <= 0) {
 		return;
