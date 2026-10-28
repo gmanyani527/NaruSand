@@ -444,7 +444,13 @@ public:
 	int						jjkWallRunStartTime;
 	int						jjkWallRunCooldownUntil;
 	void					CheckCursedWall();
-
+	bool					jjkSuperJumpCharging;
+	int						jjkSuperJumpChargeStartTime;
+	int						jjkSuperJumpCooldownUntil;
+	void					StartSuperJumpCharge();
+	void					ReleaseSuperJumpCharge();
+	void					CancelSuperJumpCharge();
+	void					ToggleSuperJump();
 
 							idPlayer();
 	virtual					~idPlayer();

@@ -3419,6 +3419,29 @@ void Cmd_DomainExit_f(const idCmdArgs& args) {
 }
 
 
+static void Cmd_JJKSuperJumpDown_f(const idCmdArgs& args) {
+
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	if (player == NULL) {
+		return;
+	}
+
+	player->ToggleSuperJump();
+}
+
+
+static void Cmd_JJKSuperJumpUp_f(const idCmdArgs& args) {
+
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	if (player == NULL) {
+		return;
+	}
+
+	player->ReleaseSuperJumpCharge();
+}
+
 
 
 
@@ -3505,6 +3528,20 @@ void idGameLocal::InitConsoleCommands( void ) {
 		Cmd_DomainExit_f,
 		CMD_FL_GAME,
 		"returns the player from Domain Expansion"
+	);
+
+	cmdSystem->AddCommand(
+		"jjkSuperJumpStart",
+		Cmd_JJKSuperJumpDown_f,
+		CMD_FL_GAME,
+		"Start charging JJK Super Jump"
+	);
+
+	cmdSystem->AddCommand(
+		"jjkSuperJumpRelease",
+		Cmd_JJKSuperJumpUp_f,
+		CMD_FL_GAME,
+		"Release JJK Super Jump"
 	);
 
 	cmdSystem->AddCommand( "game_memory",			idClass::DisplayInfo_f,		CMD_FL_GAME,				"displays game class info" );

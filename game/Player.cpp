@@ -10050,6 +10050,13 @@ void idPlayer::Think( void ) {
 	// Run the normal movement physics.
 	Move();
 	
+	// JJK Super Jump charge validation.
+	if (jjkSuperJumpCharging &&
+		(health <= 0 || noclip || spectating ||
+			!physicsObj.HasGroundContacts())) {
+
+		CancelSuperJumpCharge();
+	}
 
 	if (physicsObj.HasJumped()) {
 		jjkWasAirborne = true;
@@ -10214,6 +10221,133 @@ void idPlayer::Think( void ) {
 
 	inBuyZonePrev = false;
 }
+
+void idPlayer::ToggleSuperJump() {
+	if (jjkSuperJumpCharging) {
+		ReleaseSuperJumpCharge();
+	}
+	else {
+		StartSuperJumpCharge();
+	}
+}
+
+void idPlayer::StartSuperJumpCharge() {
+	gameLocal.Printf("DEBUG: Super Jump function was called!\n");
+
+	// Cannot charge while dead or using special movement modes.
+	if (health <= 0 || noclip || spectating) {
+		return;
+	}
+
+	// Must be on the ground.
+	if (!physicsObj.HasGroundContacts()) {
+		return;
+	}
+
+	// Cannot charge during cooldown.
+	if (gameLocal.time < jjkSuperJumpCooldownUntil) {
+		return;
+	}
+
+	// Require enough cursed energy.
+	if (cursedEnergy < 20.0f) {
+		gameLocal.Printf("SUPER JUMP: Not enough cursed energy!\n");
+		return;
+	}
+
+	if (jjkSuperJumpCharging) {
+		return;
+	}
+
+	jjkSuperJumpCharging = true;
+	jjkSuperJumpChargeStartTime = gameLocal.time;
+
+	gameLocal.Printf("SUPER JUMP: Charging...\n");
+}
+
+
+void idPlayer::ReleaseSuperJumpCharge() {
+
+	if (!jjkSuperJumpCharging) {
+		return;
+	}
+
+	jjkSuperJumpCharging = false;
+
+	// Cancel if the player is no longer eligible.
+	if (health <= 0 || noclip || spectating ||
+		!physicsObj.HasGroundContacts()) {
+		return;
+	}
+
+	const int minChargeTime = 500;
+	const int maxChargeTime = 1500;
+	const int cooldownTime = 3000;
+
+	int chargeTime =
+		gameLocal.time - jjkSuperJumpChargeStartTime;
+
+	// Releasing too early cancels the ability.
+	if (chargeTime < minChargeTime) {
+		gameLocal.Printf("SUPER JUMP: Charge too short!\n");
+		return;
+	}
+
+	// Cap the charge duration.
+	if (chargeTime > maxChargeTime) {
+		chargeTime = maxChargeTime;
+	}
+
+	if (cursedEnergy < 20.0f) {
+		return;
+	}
+
+	// Charge percentage: 0 at minimum, 1 at maximum.
+	const float chargeFraction =
+		float(chargeTime - minChargeTime) /
+		float(maxChargeTime - minChargeTime);
+
+	// Upward launch velocity.
+	// 450 at minimum charge, 700 at full charge.
+	const float jumpSpeed =
+		450.0f + chargeFraction * 250.0f;
+
+	// Calculate upward direction from gravity.
+	idVec3 up = -physicsObj.GetGravityNormal();
+
+	// Preserve horizontal velocity.
+	idVec3 velocity = physicsObj.GetLinearVelocity();
+
+	// Remove the existing vertical component.
+	velocity -= up * (velocity * up);
+
+	// Add Super Jump velocity.
+	velocity += up * jumpSpeed;
+
+	physicsObj.SetLinearVelocity(velocity);
+
+	// Spend cursed energy.
+	cursedEnergy -= 20.0f;
+
+	// Start cooldown.
+	jjkSuperJumpCooldownUntil =
+		gameLocal.time + cooldownTime;
+
+	// Protect against fall damage.
+	jjkFallDamageProtected = true;
+
+	gameLocal.Printf(
+		"SUPER JUMP ACTIVATED! Charge: %d ms, Energy: %.1f\n",
+		chargeTime,
+		cursedEnergy
+	);
+}
+
+
+void idPlayer::CancelSuperJumpCharge() {
+	jjkSuperJumpCharging = false;
+}
+
 
 
 
