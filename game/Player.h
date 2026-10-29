@@ -425,6 +425,19 @@ public:
 	float					buyMenuCash;
 // RITUAL END
 
+	enum jjkAbility_t {
+		JJK_ABILITY_BLUE,
+		JJK_ABILITY_RED,
+		JJK_ABILITY_DOMAIN,
+		JJK_ABILITY_RCT,
+		JJK_ABILITY_FUGA,
+		JJK_ABILITY_DISMANTLE,
+		JJK_ABILITY_BLACK_FLASH,
+		JJK_ABILITY_CURSED_PUNCH,
+		JJK_ABILITY_DIVERGENT_FIST,
+		JJK_ABILITY_BOOGIE_WOOGIE
+	};
+
 public:
 	CLASS_PROTOTYPE( idPlayer );
 
@@ -461,6 +474,7 @@ public:
 	float					GetJJKMaxCursedEnergy() const;
 	float					GetJJKTechniqueMultiplier() const;
 	void					JJKReverseCursedTechnique();
+	bool					CanUseJJKAbility(int ability) const;
 
 
 	enum jjkArchetype_t {

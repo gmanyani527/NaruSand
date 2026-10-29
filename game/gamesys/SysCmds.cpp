@@ -3110,11 +3110,18 @@ void Cmd_DomainScan_f(const idCmdArgs& args) {
 
 
 void Cmd_DomainExpansion_f(const idCmdArgs& args) {
+	// DOMAIN EXPANSION: Only Gojo and Sukuna can use it.
+	
 
 	idPlayer* player = gameLocal.GetLocalPlayer();
 
 	if (!player) {
 		gameLocal.Printf("No player found.\n");
+		return;
+	}
+
+	if (!player->CanUseJJKAbility(idPlayer::JJK_ABILITY_DOMAIN)) {
+		gameLocal.Printf("Only Gojo and Sukuna can use Domain Expansion!\n");
 		return;
 	}
 
@@ -3465,6 +3472,12 @@ void Cmd_SpendEnergy_f(const idCmdArgs& args) {
 static void Cmd_JJKDismantle_f(const idCmdArgs& args) {
 
 	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	// DISMANTLE: Only Sukuna can use this technique.
+	if (!player->CanUseJJKAbility(idPlayer::JJK_ABILITY_DISMANTLE)) {
+		gameLocal.Printf("Only Sukuna can use Dismantle!\n");
+		return;
+	}
 
 	if (player == NULL) {
 		return;

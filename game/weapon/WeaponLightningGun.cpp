@@ -250,103 +250,122 @@ void rvWeaponLightningGun::Restore ( idRestoreGame* savefile ) {
 
 }
 
-/*
-================
-rvWeaponLightningGun::Think
-================
-*/
-void rvWeaponLightningGun::Think ( void ) {
-	trace_t	  tr;
+
+void rvWeaponLightningGun::Think(void) {
+	trace_t tr;
 
 	rvWeapon::Think();
 
 	UpdateTubes();
 
-	// If no longer firing or out of ammo then nothing to do in the think
-	if ( !wsfl.attack || !IsReady() || !AmmoAvailable() ) {
-		if ( trailEffectView ) {
-			trailEffectView->Stop ( );
+	// If no longer firing or out of ammo, stop the effects.
+	if (!wsfl.attack || !IsReady() || !AmmoAvailable()) {
+		if (trailEffectView) {
+			trailEffectView->Stop();
 			trailEffectView = NULL;
 		}
-	
+
 		currentPath.StopEffects();
 		StopChainLightning();
 		return;
 	}
 
-	// Cast a ray out to the lock range
-// RAVEN BEGIN
-// ddynerman: multiple clip worlds
-// jshepard: allow projectile hits
-	gameLocal.TracePoint(	owner, tr, 
-							playerViewOrigin, 
-							playerViewOrigin + playerViewAxis[0] * range, 
-							(MASK_SHOT_RENDERMODEL|CONTENTS_WATER|CONTENTS_PROJECTILE), owner );
-// RAVEN END
-	// Calculate the direction of the lightning effect using the barrel joint of the weapon
-	// and the end point of the trace
+	// Cast a ray out to the lock range.
+	gameLocal.TracePoint(
+		owner,
+		tr,
+		playerViewOrigin,
+		playerViewOrigin + playerViewAxis[0] * range,
+		(MASK_SHOT_RENDERMODEL | CONTENTS_WATER | CONTENTS_PROJECTILE),
+		owner
+	);
+
+	// Calculate the lightning effect origin.
 	idVec3 origin;
 	idMat3 axis;
-	
-	//fire from chest if show gun models is off.
-	if( !cvarSystem->GetCVarBool("ui_showGun"))	{
-		GetGlobalJointTransform( true, chestJointView, origin, axis );
-	} else {
-		GetGlobalJointTransform( true, barrelJointView, origin, axis );
+
+	if (!cvarSystem->GetCVarBool("ui_showGun")) {
+		GetGlobalJointTransform(true, chestJointView, origin, axis);
+	}
+	else {
+		GetGlobalJointTransform(true, barrelJointView, origin, axis);
 	}
 
-	// Cache the target we are hitting
+	// Cache the target.
 	currentPath.origin = tr.endpos;
 	currentPath.normal = tr.c.normal;
 	currentPath.target = gameLocal.entities[tr.c.entityNum];
 
 	UpdateChainLightning();
-	
-	UpdateEffects( origin );
-	
+	UpdateEffects(origin);
 	MuzzleFlash();
 
-	// Inflict damage on all targets being attacked
-	if ( !gameLocal.isClient && gameLocal.time >= nextAttackTime ) {
-		int    i;
-		float  power = 1.0f;
+	// Inflict damage on targets being attacked.
+	if (!gameLocal.isClient && gameLocal.time >= nextAttackTime) {
+		int i;
+		float power = 1.0f;
 		idVec3 dir;
-		
-		owner->inventory.UseAmmo( ammoType, ammoRequired );
-		
+
+		owner->inventory.UseAmmo(ammoType, ammoRequired);
+
 		dir = tr.endpos - origin;
-		dir.Normalize ( );
-		
-		nextAttackTime = gameLocal.time + (fireRate * owner->PowerUpModifier ( PMOD_FIRERATE ));
-		Attack ( currentPath.target, dir, power );
-		// GOJO BLUE: Consume cursed energy to pull an enemy.
-		idEntity* blueTarget = currentPath.target.GetEntity();
+		dir.Normalize();
 
-		if (blueTarget &&
-			blueTarget->IsType(idAI::GetClassType()) &&
-			blueTarget->health > 0) {
+		nextAttackTime = gameLocal.time +
+			(fireRate * owner->PowerUpModifier(PMOD_FIRERATE));
 
-			const float blueEnergyCost = 2.0f;
+		// Original Lightning Gun damage.
+		Attack(currentPath.target, dir, power);
 
-			if (owner->SpendCursedEnergy(blueEnergyCost)) {
-				ApplyGojoBluePull(blueTarget);
+		// ========================================
+		// GOJO BLUE - ARCHETYPE RESTRICTION
+		// ========================================
+
+		// Only Gojo can use the Blue attraction technique.
+		if (owner->CanUseJJKAbility(idPlayer::JJK_ABILITY_BLUE)) {
+
+			idEntity* blueTarget = currentPath.target.GetEntity();
+
+			// Only pull living AI enemies.
+			if (blueTarget &&
+				blueTarget->IsType(idAI::GetClassType()) &&
+				blueTarget->health > 0) {
+
+				const float blueEnergyCost = 2.0f;
+
+				// Consume CE before activating Blue.
+				if (owner->SpendCursedEnergy(blueEnergyCost)) {
+					ApplyGojoBluePull(blueTarget);
+				}
 			}
 		}
 
-		// GOJO BLUE: Pull the enemy toward the player
-		ApplyGojoBluePull(currentPath.target.GetEntity());
-		for ( i = 0; i < chainLightning.Num(); i ++, power *= 0.75f ) {
-			Attack ( chainLightning[i].target, chainLightning[i].normal, power );
+		// ========================================
+		// ORIGINAL CHAIN LIGHTNING BEHAVIOR
+		// ========================================
+
+		for (i = 0; i < chainLightning.Num(); i++, power *= 0.75f) {
+			Attack(
+				chainLightning[i].target,
+				chainLightning[i].normal,
+				power
+			);
 		}
 
-		statManager->WeaponFired( owner, owner->GetCurrentWeapon(), chainLightning.Num() + 1 );
+		statManager->WeaponFired(
+			owner,
+			owner->GetCurrentWeapon(),
+			chainLightning.Num() + 1
+		);
 	}
 
-	// Play the lightning crawl effect every so often when doing damage
-	if ( gameLocal.time > nextCrawlTime ) {
-		nextCrawlTime = gameLocal.time + SEC2MS(spawnArgs.GetFloat ( "crawlDelay", ".3" ));
+	// Lightning crawl effect.
+	if (gameLocal.time > nextCrawlTime) {
+		nextCrawlTime = gameLocal.time +
+			SEC2MS(spawnArgs.GetFloat("crawlDelay", ".3"));
 	}
 }
+
 
 
 

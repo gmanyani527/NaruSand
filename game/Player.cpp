@@ -9248,6 +9248,11 @@ void idPlayer::CursedDash(void) {
 }
 
 void idPlayer::CursedPunch(void) {
+	// CURSED PUNCH: Only Yuji and Todo can use this ability.
+	if (!CanUseJJKAbility(JJK_ABILITY_CURSED_PUNCH)) {
+		gameLocal.Printf("Only Yuji and Todo can use Cursed Punch!\n");
+		return;
+	}
 	if (health <= 0) {
 		return;
 	}
@@ -9290,6 +9295,11 @@ void idPlayer::CursedPunch(void) {
 }
 
 void idPlayer::BlackFlash(void) {
+	// BLACK FLASH: Only Yuji and Todo can use this ability.
+	if (!CanUseJJKAbility(JJK_ABILITY_BLACK_FLASH)) {
+		gameLocal.Printf("Only Yuji and Todo can use Black Flash!\n");
+		return;
+	}
 	trace_t trace;
 
 	idVec3 start = GetEyePosition();
@@ -9492,6 +9502,43 @@ void idPlayer::SelectJJKArchetype(int archetype) {
 }
 
 
+/*
+================
+idPlayer::CanUseJJKAbility
+================
+*/
+bool idPlayer::CanUseJJKAbility(int ability) const {
+
+	switch (jjkCurrentArchetype) {
+
+	case JJK_GOJO:
+		return ability == JJK_ABILITY_BLUE ||
+			ability == JJK_ABILITY_RED ||
+			ability == JJK_ABILITY_DOMAIN ||
+			ability == JJK_ABILITY_RCT;
+
+	case JJK_YUJI:
+		return ability == JJK_ABILITY_BLACK_FLASH ||
+			ability == JJK_ABILITY_CURSED_PUNCH ||
+			ability == JJK_ABILITY_DIVERGENT_FIST;
+
+	case JJK_SUKUNA:
+		return ability == JJK_ABILITY_FUGA ||
+			ability == JJK_ABILITY_DISMANTLE ||
+			ability == JJK_ABILITY_DOMAIN ||
+			ability == JJK_ABILITY_RCT;
+
+	case JJK_TODO:
+		return ability == JJK_ABILITY_BOOGIE_WOOGIE ||
+			ability == JJK_ABILITY_CURSED_PUNCH ||
+			ability == JJK_ABILITY_BLACK_FLASH;
+	}
+
+	return false;
+}
+
+
+
 
 void idPlayer::ShowJJKStats() {
 
@@ -9623,7 +9670,10 @@ idPlayer::JJKReverseCursedTechnique
 ================
 */
 void idPlayer::JJKReverseCursedTechnique() {
-
+	if (!CanUseJJKAbility(JJK_ABILITY_RCT)) {
+		gameLocal.Printf("This archetype cannot use Reverse Cursed Technique!\n");
+		return;
+	}
 	const float energyCost = 30.0f;
 	const int healAmount = 50;
 	const int cooldown = 10000; // 10 seconds
@@ -9672,6 +9722,10 @@ void idPlayer::JJKReverseCursedTechnique() {
 
 void idPlayer::FireGojoRed() {
 	// Only the server should spawn projectiles.
+	if (!CanUseJJKAbility(JJK_ABILITY_RED)) {
+		gameLocal.Printf("Only Gojo can use Red!\n");
+		return;
+	}
 	if (gameLocal.isClient) {
 		return;
 	}
@@ -9895,6 +9949,11 @@ void idPlayer::CollectDomainTargets(idList<idStr>& targets) {
 
 
 void idPlayer::UseBoogieWoogie(void) {
+	// BOOGIE WOOGIE: Only Todo can use this ability.
+	if (!CanUseJJKAbility(JJK_ABILITY_BOOGIE_WOOGIE)) {
+		gameLocal.Printf("Only Todo can use Boogie Woogie!\n");
+		return;
+	}
 
 	// Check if player can use the ability
 	if (health <= 0 || spectating || noclip) {

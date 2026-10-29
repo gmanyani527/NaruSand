@@ -387,6 +387,7 @@ stateResult_t WeaponNapalmGun::State_Idle( const stateParms_t& parms ) {
 WeaponNapalmGun::State_Fire
 ================
 */
+
 stateResult_t WeaponNapalmGun::State_Fire(const stateParms_t& parms) {
 	enum {
 		STAGE_INIT,
@@ -396,25 +397,31 @@ stateResult_t WeaponNapalmGun::State_Fire(const stateParms_t& parms) {
 	switch (parms.stage) {
 	case STAGE_INIT:
 		if (wsfl.zoom) {
-			// Keep the original alternate fire behavior.
+			// Keep original alternate fire behavior.
 			nextAttackTime = gameLocal.time +
 				(altFireRate * owner->PowerUpModifier(PMOD_FIRERATE));
 
 			Attack(true, 1, spread, 0, 1.0f);
 			PlayAnim(ANIMCHANNEL_ALL, "idle", parms.blendFrames);
-
 		}
 		else {
-			// SUKUNA FUGA: Requires 40 Cursed Energy.
-			const float fugaEnergyCost = 75.0f;
-
-			if (!owner->SpendCursedEnergy(fugaEnergyCost)) {
-				// Not enough energy: return to Idle without firing.
+			// SUKUNA FUGA: Only Sukuna can use this attack.
+			if (!owner->CanUseJJKAbility(idPlayer::JJK_ABILITY_FUGA)) {
+				gameLocal.Printf("Only Sukuna can use Fuga!\n");
 				SetState("Idle", 4);
 				return SRESULT_DONE;
 			}
 
-			// Scale projectile power with the Technique stat.
+			// SUKUNA FUGA: Requires 75 Cursed Energy.
+			const float fugaEnergyCost = 75.0f;
+
+			if (!owner->SpendCursedEnergy(fugaEnergyCost)) {
+				gameLocal.Printf("Not enough Cursed Energy for Fuga!\n");
+				SetState("Idle", 4);
+				return SRESULT_DONE;
+			}
+
+			// Scale Fuga using the Technique stat.
 			float fugaPower = owner->GetJJKTechniqueMultiplier();
 
 			nextAttackTime = gameLocal.time +
@@ -454,6 +461,7 @@ stateResult_t WeaponNapalmGun::State_Fire(const stateParms_t& parms) {
 
 	return SRESULT_ERROR;
 }
+
 
 
 stateResult_t WeaponNapalmGun::Frame_MoveCylinder( const stateParms_t& parms) {
