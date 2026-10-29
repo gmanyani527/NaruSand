@@ -3493,6 +3493,10 @@ static void Cmd_JJKBoogieWoogie_f(const idCmdArgs& args) {
 	if (player == NULL) {
 		return;
 	}
+	if (!player->CanUseJJKAbility(idPlayer::JJK_ABILITY_BOOGIE_WOOGIE)) {
+		gameLocal.Printf("Only Todo can use Boogie Woogie!\n");
+		return;
+	}
 
 	player->UseBoogieWoogie();
 }
