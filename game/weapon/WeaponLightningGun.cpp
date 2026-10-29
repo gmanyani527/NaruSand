@@ -319,6 +319,20 @@ void rvWeaponLightningGun::Think ( void ) {
 		
 		nextAttackTime = gameLocal.time + (fireRate * owner->PowerUpModifier ( PMOD_FIRERATE ));
 		Attack ( currentPath.target, dir, power );
+		// GOJO BLUE: Consume cursed energy to pull an enemy.
+		idEntity* blueTarget = currentPath.target.GetEntity();
+
+		if (blueTarget &&
+			blueTarget->IsType(idAI::GetClassType()) &&
+			blueTarget->health > 0) {
+
+			const float blueEnergyCost = 2.0f;
+
+			if (owner->SpendCursedEnergy(blueEnergyCost)) {
+				ApplyGojoBluePull(blueTarget);
+			}
+		}
+
 		// GOJO BLUE: Pull the enemy toward the player
 		ApplyGojoBluePull(currentPath.target.GetEntity());
 		for ( i = 0; i < chainLightning.Num(); i ++, power *= 0.75f ) {

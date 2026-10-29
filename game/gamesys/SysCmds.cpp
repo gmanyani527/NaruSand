@@ -3473,6 +3473,98 @@ static void Cmd_JJKDismantle_f(const idCmdArgs& args) {
 	player->UseDismantle();
 }
 
+static void Cmd_JJKBoogieWoogie_f(const idCmdArgs& args) {
+
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	if (player == NULL) {
+		return;
+	}
+
+	player->UseBoogieWoogie();
+}
+
+
+static void Cmd_JJKSelectCharacter_f(const idCmdArgs& args) {
+
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	if (player == NULL) {
+		return;
+	}
+
+	if (args.Argc() < 2) {
+		gameLocal.Printf("Usage: jjkSelectCharacter 0-3\n");
+		gameLocal.Printf("0 = Gojo, 1 = Yuji, 2 = Sukuna, 3 = Todo\n");
+		return;
+	}
+
+	int character = atoi(args.Argv(1));
+
+	if (character < 0 || character > 3) {
+		gameLocal.Printf("Invalid character! Choose 0-3.\n");
+		return;
+	}
+
+	player->SelectJJKArchetype(character);
+	player->ShowJJKStats();
+}
+
+
+static void Cmd_JJKShowStats_f(const idCmdArgs& args) {
+
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	if (player == NULL) {
+		return;
+	}
+
+	player->ShowJJKStats();
+}
+
+
+
+
+static void Cmd_JJKModifyStat_f(const idCmdArgs& args) {
+
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	if (player == NULL) {
+		return;
+	}
+
+	if (args.Argc() != 3) {
+		gameLocal.Printf("Usage: jjkModifyStat <stat> <amount>\n");
+		gameLocal.Printf("0 Strength, 1 Durability, 2 Speed\n");
+		gameLocal.Printf("3 Agility, 4 Cursed Energy, 5 Technique\n");
+		return;
+	}
+
+	int stat = atoi(args.Argv(1));
+	int amount = atoi(args.Argv(2));
+
+	player->ModifyJJKStat(stat, amount);
+}
+
+
+/*
+================
+Cmd_JJKReverseCursedTechnique_f
+================
+*/
+static void Cmd_JJKReverseCursedTechnique_f(const idCmdArgs& args) {
+
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	if (!player) {
+		gameLocal.Printf("RCT: No local player found.\n");
+		return;
+	}
+
+	player->JJKReverseCursedTechnique();
+}
+
+
 /*
 =================
 idGameLocal::InitConsoleCommands
@@ -3561,6 +3653,43 @@ void idGameLocal::InitConsoleCommands( void ) {
 		CMD_FL_GAME,
 		"Use JJK Dismantle cursed slash"
 	);
+
+	cmdSystem->AddCommand(
+		"jjkBoogieWoogie",
+		Cmd_JJKBoogieWoogie_f,
+		CMD_FL_GAME,
+		"Swap positions with an enemy"
+	);
+
+
+	cmdSystem->AddCommand(
+		"jjkSelectCharacter",
+		Cmd_JJKSelectCharacter_f,
+		CMD_FL_GAME,
+		"Select a JJK character archetype"
+	);
+
+	cmdSystem->AddCommand(
+		"jjkShowStats",
+		Cmd_JJKShowStats_f,
+		CMD_FL_GAME,
+		"Display the current JJK RPG stats"
+	);
+
+	cmdSystem->AddCommand(
+		"jjkModifyStat",
+		Cmd_JJKModifyStat_f,
+		CMD_FL_GAME,
+		"Increase or decrease a JJK RPG stat"
+	);
+
+	cmdSystem->AddCommand(
+		"jjkRCT",
+		Cmd_JJKReverseCursedTechnique_f,
+		CMD_FL_GAME,
+		"Heal using Reverse Cursed Technique"
+	);
+
 
 	cmdSystem->AddCommand( "game_memory",			idClass::DisplayInfo_f,		CMD_FL_GAME,				"displays game class info" );
 	cmdSystem->AddCommand( "listClasses",			idClass::ListClasses_f,		CMD_FL_GAME,				"lists game classes" );

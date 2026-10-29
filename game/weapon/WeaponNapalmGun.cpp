@@ -381,52 +381,80 @@ stateResult_t WeaponNapalmGun::State_Idle( const stateParms_t& parms ) {
 	return SRESULT_ERROR;
 }
 
+
 /*
 ================
 WeaponNapalmGun::State_Fire
 ================
 */
-stateResult_t WeaponNapalmGun::State_Fire( const stateParms_t& parms ) {
+stateResult_t WeaponNapalmGun::State_Fire(const stateParms_t& parms) {
 	enum {
 		STAGE_INIT,
 		STAGE_WAIT,
-	};	
-	switch ( parms.stage ) {
-		case STAGE_INIT:
-			if ( wsfl.zoom ) {
-				nextAttackTime = gameLocal.time + (altFireRate * owner->PowerUpModifier ( PMOD_FIRERATE ));
-				Attack ( true, 1, spread, 0, 1.0f );
-				PlayAnim ( ANIMCHANNEL_ALL, "idle", parms.blendFrames );
-				//fireHeld = true;
-			} else {
-				nextAttackTime = gameLocal.time + (fireRate * owner->PowerUpModifier ( PMOD_FIRERATE ));
-				Attack ( false, 1, spread, 0, 1.0f );
+	};
 
-				int animNum = viewModel->GetAnimator()->GetAnim ( "fire" );
-				if ( animNum ) {
-					idAnim* anim;
-					anim = (idAnim*)viewModel->GetAnimator()->GetAnim ( animNum );				
-					anim->SetPlaybackRate ( (float)anim->Length() / (fireRate * owner->PowerUpModifier ( PMOD_FIRERATE )) );
-				}
+	switch (parms.stage) {
+	case STAGE_INIT:
+		if (wsfl.zoom) {
+			// Keep the original alternate fire behavior.
+			nextAttackTime = gameLocal.time +
+				(altFireRate * owner->PowerUpModifier(PMOD_FIRERATE));
 
-				PlayAnim ( ANIMCHANNEL_ALL, "fire", parms.blendFrames );
-			}
+			Attack(true, 1, spread, 0, 1.0f);
+			PlayAnim(ANIMCHANNEL_ALL, "idle", parms.blendFrames);
 
-			previousAmmo = AmmoInClip();
-			return SRESULT_STAGE ( STAGE_WAIT );
-	
-		case STAGE_WAIT:			
-			if ( AnimDone ( ANIMCHANNEL_ALL, 0 ) ) {
-				if ( !wsfl.zoom ) 
-					SetState ( "Reload", 4 );
-				else
-					SetState ( "Idle", 4 );
+		}
+		else {
+			// SUKUNA FUGA: Requires 40 Cursed Energy.
+			const float fugaEnergyCost = 75.0f;
+
+			if (!owner->SpendCursedEnergy(fugaEnergyCost)) {
+				// Not enough energy: return to Idle without firing.
+				SetState("Idle", 4);
 				return SRESULT_DONE;
 			}
-			return SRESULT_WAIT;
+
+			// Scale projectile power with the Technique stat.
+			float fugaPower = owner->GetJJKTechniqueMultiplier();
+
+			nextAttackTime = gameLocal.time +
+				(fireRate * owner->PowerUpModifier(PMOD_FIRERATE));
+
+			Attack(false, 1, spread, 0, fugaPower);
+
+			int animNum = viewModel->GetAnimator()->GetAnim("fire");
+			if (animNum) {
+				idAnim* anim;
+				anim = (idAnim*)viewModel->GetAnimator()->GetAnim(animNum);
+
+				anim->SetPlaybackRate(
+					(float)anim->Length() /
+					(fireRate * owner->PowerUpModifier(PMOD_FIRERATE))
+				);
+			}
+
+			PlayAnim(ANIMCHANNEL_ALL, "fire", parms.blendFrames);
+		}
+
+		previousAmmo = AmmoInClip();
+		return SRESULT_STAGE(STAGE_WAIT);
+
+	case STAGE_WAIT:
+		if (AnimDone(ANIMCHANNEL_ALL, 0)) {
+			if (!wsfl.zoom) {
+				SetState("Reload", 4);
+			}
+			else {
+				SetState("Idle", 4);
+			}
+			return SRESULT_DONE;
+		}
+		return SRESULT_WAIT;
 	}
+
 	return SRESULT_ERROR;
 }
+
 
 stateResult_t WeaponNapalmGun::Frame_MoveCylinder( const stateParms_t& parms) {
 	cylinderState = CYLINDER_MOVE_POSITION;

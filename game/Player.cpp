@@ -1826,12 +1826,14 @@ void idPlayer::Spawn( void ) {
 	jjkWallRunStartTime = 0;
 	jjkWallRunCooldownUntil = 0;
 	jjkDismantleCooldownUntil = 0;
+	jjkRCTNextUseTime = 0;
 
 
 	idStr		temp;
 	idBounds	bounds;
 	maxCursedEnergy = 100.0f;
 	cursedEnergy = maxCursedEnergy;
+	SelectJJKArchetype(JJK_GOJO);
 
 	if ( entityNumber >= MAX_CLIENTS ) {
 		gameLocal.Error( "entityNum > MAX_CLIENTS for player.  Player may only be spawned with a client." );
@@ -8833,6 +8835,18 @@ void idPlayer::AdjustSpeed( void ) {
 		speed = pm_walkspeed.GetFloat();
 		bobFrac = 0.0f;
 	}
+	// =====================================
+  // JJK RPG - SPEED STAT
+  // =====================================
+
+	if (!spectating && !noclip) {
+
+		float speedMultiplier =
+			1.0f + (jjkSpeed - 10) * 0.05f;
+
+		// Apply RPG speed bonus
+		speed *= speedMultiplier;
+	}
 
 	speed *= PowerUpModifier(PMOD_SPEED);
 
@@ -9045,9 +9059,20 @@ void idPlayer::Move( void ) {
 	oldVelocity = physicsObj.GetLinearVelocity();
 	pushVelocity = physicsObj.GetPushedLinearVelocity();
 
-	// set physics variables
-	physicsObj.SetMaxStepHeight( pm_stepsize.GetFloat() );
-	physicsObj.SetMaxJumpHeight( pm_jumpheight.GetFloat() );
+
+	// =====================================
+	// JJK RPG - AGILITY
+	// =====================================
+
+	float agilityMultiplier =
+		1.0f + (jjkAgility - 10) * 0.05f;
+
+	physicsObj.SetMaxStepHeight(pm_stepsize.GetFloat());
+
+	physicsObj.SetMaxJumpHeight(
+		pm_jumpheight.GetFloat() * agilityMultiplier
+	);
+
 
 	if ( noclip ) {
 		physicsObj.SetContents( 0 );
@@ -9292,6 +9317,7 @@ void idPlayer::BlackFlash(void) {
 				return;
 			}
 
+			float strengthMultiplier = 1.0f + (jjkStrength - 10) * 0.1f;
 			hitEntity->Damage(
 				this,
 				this,
@@ -9404,6 +9430,246 @@ void idPlayer::UseDismantle(void) {
 }
 
 
+
+void idPlayer::SelectJJKArchetype(int archetype) {
+
+	// Check that the selected archetype is valid
+	if (archetype < JJK_GOJO || archetype > JJK_TODO) {
+		gameLocal.Printf("Invalid JJK archetype!\n");
+		return;
+	}
+
+	jjkCurrentArchetype = archetype;
+
+	switch (jjkCurrentArchetype) {
+
+	case JJK_GOJO:
+		jjkStrength = 12;
+		jjkDurability = 12;
+		jjkSpeed = 15;
+		jjkAgility = 15;
+		jjkCursedEnergyStat = 20;
+		jjkTechnique = 20;
+
+		gameLocal.Printf("JJK Character Selected: GOJO\n");
+		break;
+
+	case JJK_YUJI:
+		jjkStrength = 20;
+		jjkDurability = 18;
+		jjkSpeed = 16;
+		jjkAgility = 16;
+		jjkCursedEnergyStat = 10;
+		jjkTechnique = 12;
+
+		gameLocal.Printf("JJK Character Selected: YUJI\n");
+		break;
+
+	case JJK_SUKUNA:
+		jjkStrength = 18;
+		jjkDurability = 17;
+		jjkSpeed = 15;
+		jjkAgility = 14;
+		jjkCursedEnergyStat = 20;
+		jjkTechnique = 19;
+
+		gameLocal.Printf("JJK Character Selected: SUKUNA\n");
+		break;
+
+	case JJK_TODO:
+		jjkStrength = 18;
+		jjkDurability = 16;
+		jjkSpeed = 14;
+		jjkAgility = 19;
+		jjkCursedEnergyStat = 12;
+		jjkTechnique = 13;
+
+		gameLocal.Printf("JJK Character Selected: TODO\n");
+		break;
+	}
+
+	gameLocal.Printf("JJK RPG stats updated!\n");
+}
+
+
+
+void idPlayer::ShowJJKStats() {
+
+	gameLocal.Printf("\n===== NARUSAND RPG STATS =====\n");
+
+	const char* characterName = "UNKNOWN";
+
+	switch (jjkCurrentArchetype) {
+	case JJK_GOJO:   characterName = "GOJO"; break;
+	case JJK_YUJI:   characterName = "YUJI"; break;
+	case JJK_SUKUNA: characterName = "SUKUNA"; break;
+	case JJK_TODO:   characterName = "TODO"; break;
+	}
+
+	gameLocal.Printf("Character: %s\n", characterName);
+	gameLocal.Printf("Strength: %d\n", jjkStrength);
+	gameLocal.Printf("Durability: %d\n", jjkDurability);
+	gameLocal.Printf("Speed: %d\n", jjkSpeed);
+	gameLocal.Printf("Agility: %d\n", jjkAgility);
+	gameLocal.Printf("Cursed Energy: %d\n", jjkCursedEnergyStat);
+	gameLocal.Printf("Technique: %d\n", jjkTechnique);
+
+	gameLocal.Printf("=============================\n");
+}
+
+
+void idPlayer::ModifyJJKStat(int stat, int amount) {
+
+	int* selectedStat = NULL;
+	const char* statName = "";
+
+	switch (stat) {
+
+	case 0:
+		selectedStat = &jjkStrength;
+		statName = "Strength";
+		break;
+
+	case 1:
+		selectedStat = &jjkDurability;
+		statName = "Durability";
+		break;
+
+	case 2:
+		selectedStat = &jjkSpeed;
+		statName = "Speed";
+		break;
+
+	case 3:
+		selectedStat = &jjkAgility;
+		statName = "Agility";
+		break;
+
+	case 4:
+		selectedStat = &jjkCursedEnergyStat;
+		statName = "Cursed Energy";
+		break;
+
+	case 5:
+		selectedStat = &jjkTechnique;
+		statName = "Technique";
+		break;
+
+	default:
+		gameLocal.Printf("Invalid JJK stat!\n");
+		return;
+	}
+
+	// Stats cannot go below 1 or above 20
+	int newValue = *selectedStat + amount;
+
+	if (newValue < 1) {
+		newValue = 1;
+	}
+
+	if (newValue > 20) {
+		newValue = 20;
+	}
+
+	*selectedStat = newValue;
+
+	gameLocal.Printf(
+		"JJK %s updated to %d\n",
+		statName,
+		*selectedStat
+	);
+
+	ShowJJKStats();
+}
+
+
+float idPlayer::GetJJKMaxCursedEnergy() const {
+
+	float maxEnergy =
+		100.0f + (jjkCursedEnergyStat - 10) * 5.0f;
+
+	if (maxEnergy < 50.0f) {
+		maxEnergy = 50.0f;
+	}
+
+	if (maxEnergy > 150.0f) {
+		maxEnergy = 150.0f;
+	}
+
+	return maxEnergy;
+}
+
+
+float idPlayer::GetJJKTechniqueMultiplier() const {
+
+	float multiplier =
+		1.0f + (jjkTechnique - 10) * 0.05f;
+
+	if (multiplier < 0.5f) {
+		multiplier = 0.5f;
+	}
+
+	if (multiplier > 1.5f) {
+		multiplier = 1.5f;
+	}
+
+	return multiplier;
+}
+
+
+/*
+================
+idPlayer::JJKReverseCursedTechnique
+================
+*/
+void idPlayer::JJKReverseCursedTechnique() {
+
+	const float energyCost = 30.0f;
+	const int healAmount = 50;
+	const int cooldown = 10000; // 10 seconds
+
+	// Do not activate if dead.
+	if (health <= 0) {
+		gameLocal.Printf("RCT: Cannot heal while dead.\n");
+		return;
+	}
+
+	// Do not activate during cooldown.
+	if (gameLocal.time < jjkRCTNextUseTime) {
+		int remaining = (jjkRCTNextUseTime - gameLocal.time + 999) / 1000;
+		gameLocal.Printf("RCT cooldown: %d seconds remaining.\n", remaining);
+		return;
+	}
+
+	// Do not waste energy at maximum health.
+	int maxHP = inventory.maxHealth;
+
+	if (health >= maxHP) {
+		gameLocal.Printf("RCT: Health is already full.\n");
+		return;
+	}
+
+	// Spend cursed energy only if healing is possible.
+	if (!SpendCursedEnergy(energyCost)) {
+		gameLocal.Printf("RCT: Not enough Cursed Energy.\n");
+		return;
+	}
+
+	// Restore health without exceeding the maximum.
+	health += healAmount;
+
+	if (health > maxHP) {
+		health = maxHP;
+	}
+
+	// Start cooldown after successful healing.
+	jjkRCTNextUseTime = gameLocal.time + cooldown;
+
+	gameLocal.Printf("Reverse Cursed Technique activated! HP: %d/%d\n",
+		health, maxHP);
+}
+
+
 void idPlayer::FireGojoRed() {
 	// Only the server should spawn projectiles.
 	if (gameLocal.isClient) {
@@ -9439,11 +9705,27 @@ void idPlayer::FireGojoRed() {
 
 	// Initialize the projectile and its owner.
 	projectile->Create(this, start, forward, NULL, NULL);
+	// =====================================
+   // JJK RPG - TECHNIQUE DAMAGE
+   // =====================================
 
-	// Launch the projectile.
-	projectile->Launch(start, forward, vec3_origin, 0.0f, 1.0f);
+	float techniqueMultiplier =
+		GetJJKTechniqueMultiplier();
 
-	gameLocal.Printf("Gojo Red fired!\n");
+	// Launch projectile with scaled damage power
+	projectile->Launch(
+		start,
+		forward,
+		vec3_origin,
+		0.0f,
+		techniqueMultiplier
+	);
+
+	gameLocal.Printf(
+		"Gojo Red fired! Technique multiplier: %.2f\n",
+		techniqueMultiplier
+	);
+
 }
 
 
@@ -10285,12 +10567,13 @@ void idPlayer::Think( void ) {
 	} else if ( health > 0 && !gameLocal.inCinematic ) {
 		UpdateWeapon();
 	}
-
+	maxCursedEnergy = GetJJKMaxCursedEnergy();
 	UpdateAir();
 
 	if (health > 0 && cursedEnergy < maxCursedEnergy) {
 		float deltaTime = MS2SEC(gameLocal.msec);
 		cursedEnergy += 5.0f * deltaTime;
+
 		cursedEnergy = idMath::ClampFloat(
 			0.0f,
 			maxCursedEnergy,
@@ -11279,25 +11562,50 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 // RAVEN END
 
 	// do the damage
-	if ( damage > 0 ) {
-		if ( !gameLocal.isMultiplayer ) {
-			if ( g_useDynamicProtection.GetBool() && g_skill.GetInteger() < 2 ) {
-				if ( gameLocal.time > lastDmgTime + 500 && dynamicProtectionScale > 0.25f ) {
+
+	// do the damage
+	if (damage > 0) {
+
+		if (!gameLocal.isMultiplayer) {
+			if (g_useDynamicProtection.GetBool() && g_skill.GetInteger() < 2) {
+				if (gameLocal.time > lastDmgTime + 500 && dynamicProtectionScale > 0.25f) {
 					dynamicProtectionScale -= 0.05f;
 				}
 			}
 
-			if ( dynamicProtectionScale > 0.0f ) {
+			if (dynamicProtectionScale > 0.0f) {
 				damage *= dynamicProtectionScale;
 			}
 		}
 
-		if ( damage < 1 ) {
+		// =====================================
+		// JJK RPG - DURABILITY
+		// =====================================
+
+		float durabilityMultiplier =
+			1.0f - (jjkDurability - 10) * 0.03f;
+
+		if (durabilityMultiplier < 0.5f) {
+			durabilityMultiplier = 0.5f;
+		}
+
+		if (durabilityMultiplier > 1.5f) {
+			durabilityMultiplier = 1.5f;
+		}
+
+		damage = static_cast<int>(
+			damage * durabilityMultiplier
+			);
+
+		// Minimum 1 damage for positive hits
+		if (damage < 1) {
 			damage = 1;
 		}
 
+		// Apply the reduced damage
 		int oldHealth = health;
 		health -= damage;
+
 
 		GAMELOG_ADD ( va("player%d_damage_taken", entityNumber ), damage );
 		GAMELOG_ADD ( va("player%d_damage_%s", entityNumber, damageDefName), damage );
@@ -11355,6 +11663,7 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
   	lastDamageDir.Normalize();
 	lastDamageDef = damageDef->Index();
 	lastDamageLocation = location;
+
 }
 
 /*

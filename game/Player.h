@@ -455,6 +455,30 @@ public:
 	int						jjkDismantleCooldownUntil;
 	int						jjkBoogieWoogieCooldownUntil;
 	void					UseBoogieWoogie();
+	void					SelectJJKArchetype(int archetype);
+	void					ShowJJKStats();
+	void					ModifyJJKStat(int stat, int amount);
+	float					GetJJKMaxCursedEnergy() const;
+	float					GetJJKTechniqueMultiplier() const;
+	void					JJKReverseCursedTechnique();
+
+
+	enum jjkArchetype_t {
+		JJK_GOJO = 0,
+		JJK_YUJI,
+		JJK_SUKUNA,
+		JJK_TODO
+	};
+
+	int jjkCurrentArchetype;
+
+	int jjkStrength;
+	int jjkDurability;
+	int jjkSpeed;
+	int jjkAgility;
+	int jjkCursedEnergyStat;
+	int jjkTechnique;
+
 
 
 							idPlayer();
@@ -829,6 +853,7 @@ protected:
 	void					SetupHead( const char* modelKeyName = "", idVec3 headOffset = idVec3(0, 0, 0) );
 
 private:
+	int						jjkRCTNextUseTime;
 	float					vehicleCameraDist;
 
 	jointHandle_t			hipJoint;
