@@ -89,6 +89,7 @@ private:
 	stateResult_t		State_Fire				( const stateParms_t& parms );
 
 	void				Event_RestoreHum	( void );
+	void				ApplyGojoBluePull(idEntity* target);
 
 	CLASS_STATES_PROTOTYPE ( rvWeaponLightningGun );
 };
@@ -318,6 +319,8 @@ void rvWeaponLightningGun::Think ( void ) {
 		
 		nextAttackTime = gameLocal.time + (fireRate * owner->PowerUpModifier ( PMOD_FIRERATE ));
 		Attack ( currentPath.target, dir, power );
+		// GOJO BLUE: Pull the enemy toward the player
+		ApplyGojoBluePull(currentPath.target.GetEntity());
 		for ( i = 0; i < chainLightning.Num(); i ++, power *= 0.75f ) {
 			Attack ( chainLightning[i].target, chainLightning[i].normal, power );
 		}
@@ -330,6 +333,71 @@ void rvWeaponLightningGun::Think ( void ) {
 		nextCrawlTime = gameLocal.time + SEC2MS(spawnArgs.GetFloat ( "crawlDelay", ".3" ));
 	}
 }
+
+
+
+/*
+================
+rvWeaponLightningGun::ApplyGojoBluePull
+================
+*/
+void rvWeaponLightningGun::ApplyGojoBluePull(idEntity* target) {
+
+	// Only run physics changes on the server.
+	if (gameLocal.isClient || !target || !owner) {
+		return;
+	}
+
+	// Only pull living AI enemies.
+	if (!target->IsType(idAI::GetClassType())) {
+		return;
+	}
+
+	idAI* enemy = static_cast<idAI*>(target);
+
+	if (enemy->health <= 0) {
+		return;
+	}
+	// GOJO BLUE: Interrupt the enemy's current movement command.
+	enemy->JJKStopMovement();
+
+
+
+	idPhysics* physics = enemy->GetPhysics();
+
+	if (!physics) {
+		return;
+	}
+
+	idVec3 playerPos = owner->GetPhysics()->GetOrigin();
+	idVec3 enemyPos = physics->GetOrigin();
+
+	// Pull the enemy horizontally toward the player.
+	idVec3 pullDirection = playerPos - enemyPos;
+	pullDirection.z = 0.0f;
+
+	float distance = pullDirection.Normalize();
+
+	// Keep enemies from overlapping the player.
+	if (distance <= 100.0f) {
+		return;
+	}
+
+	// Move a short distance toward the player each update.
+	const float pullStep = 100.0f;
+
+	if (pullStep > distance - 100.0f) {
+		physics->SetOrigin(
+			enemyPos + pullDirection * (distance - 100.0f)
+		);
+	}
+	else {
+		physics->SetOrigin(
+			enemyPos + pullDirection * pullStep
+		);
+	}
+}
+
 
 /*
 ================

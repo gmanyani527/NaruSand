@@ -436,6 +436,7 @@ public:
 
 							idAI();
 							~idAI();
+	void					JJKStopMovement();
 
 	void					Save							( idSaveGame *savefile ) const;
 	void					Restore							( idRestoreGame *savefile );

@@ -885,6 +885,10 @@ void idAI::Spawn( void ) {
 	// RAVEN END
 }
 
+void idAI::JJKStopMovement() {
+	StopMove(MOVE_STATUS_DONE);
+}
+
 /*
 ===================
 idAI::Begin

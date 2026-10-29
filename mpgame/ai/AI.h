@@ -436,6 +436,7 @@ public:
 
 							idAI();
 							~idAI();
+	void					JJKStopMovement();
 
 	void					Save							( idSaveGame *savefile ) const;
 	void					Restore							( idRestoreGame *savefile );
@@ -970,7 +971,6 @@ protected:
 
 	bool					StartMove						( aiMoveCommand_t command, const idVec3& goalOrigin, int goalArea, idEntity* goalEntity, aasFeature_t* feature, float range );
 	void					StopMove						( moveStatus_t status );
-
 	bool					MoveTo							( const idVec3 &pos, float range = 0.0f );
 	bool					MoveToAttack					( idEntity *ent, int attack_anim );
 	bool					MoveToTether					( rvAITether* tether );
@@ -1015,7 +1015,6 @@ public:
 	void					AnnounceFriendlyFire			( idActor* attacker );
 	void					AnnounceGrenade					( void );
 	void					AnnounceGrenadeThrow			( void );
-
 	/*
 	===============================================================================
 									Actions
